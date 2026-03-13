@@ -1,0 +1,10 @@
+node_modules
+.DS_Store
+dist
+build
+.cache
+.react-router
+*.local
+.wrangler
+.dev.vars
+*.p8

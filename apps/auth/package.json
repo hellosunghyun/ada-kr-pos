@@ -1,0 +1,32 @@
+{
+  "name": "auth",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "react-router dev",
+    "build": "react-router build",
+    "typecheck": "react-router typegen && tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "deploy": "wrangler pages deploy"
+  },
+  "dependencies": {
+    "@adapos/auth": "workspace:*",
+    "isbot": "^4.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router": "^7.4.0",
+    "@react-router/cloudflare": "^7.4.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250124.0",
+    "@react-router/dev": "^7.4.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.3",
+    "vite": "^6.2.0",
+    "vite-tsconfig-paths": "^5.1.4",
+    "wrangler": "^3.109.3"
+  }
+}
