@@ -302,3 +302,149 @@ body {
     font-size: 0.8rem;
   }
 }
+
+.login-container {
+  min-height: calc(100vh - 56px - 80px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.login-card {
+  background: var(--color-surface);
+  border-radius: 16px;
+  padding: 48px 40px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.login-card h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+}
+
+.login-card > p {
+  color: var(--color-text-secondary);
+  margin-bottom: 32px;
+  font-size: 15px;
+}
+
+.apple-signin-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #000;
+  color: #fff;
+  border-radius: 10px;
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  width: 100%;
+  transition: opacity 0.2s;
+}
+
+.apple-signin-btn:hover {
+  opacity: 0.85;
+}
+
+@media (prefers-color-scheme: dark) {
+  .apple-signin-btn {
+    background: #fff;
+    color: #000;
+  }
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+.magic-link-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+
+.magic-link-form label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.magic-link-form input[type="email"] {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  font-size: 16px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  outline: none;
+  transition: border-color 0.15s;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.magic-link-form input[type="email"]:focus {
+  border-color: var(--color-primary);
+}
+
+.magic-link-form input[type="email"]::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 0.6;
+}
+
+.magic-link-form button[type="submit"] {
+  padding: 14px;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  font-family: inherit;
+}
+
+.magic-link-form button[type="submit"]:hover {
+  opacity: 0.85;
+}
+
+.success-msg {
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(52, 199, 89, 0.1);
+  color: var(--color-success);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.error-msg {
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(255, 59, 48, 0.1);
+  color: var(--color-error);
+  border-radius: 8px;
+  font-size: 14px;
+}
