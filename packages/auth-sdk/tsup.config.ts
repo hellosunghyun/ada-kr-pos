@@ -1,7 +1,7 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: ["src/index.ts", "src/hono.ts"],
+  entry: ["src/index.ts", "src/hono.ts", "src/express.ts", "src/generic.ts"],
   format: ["cjs", "esm"],
   dts: true,
   clean: true,
