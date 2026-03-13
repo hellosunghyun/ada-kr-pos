@@ -10,4 +10,6 @@ export default [
   route("api/verify/confirm", "routes/api.verify.confirm.ts"),
   route("api/auth/apple", "routes/api.auth.apple.ts"),
   route("api/auth/apple/callback", "routes/api.auth.apple.callback.ts"),
+  route("api/auth/magic/send", "routes/api.auth.magic.send.ts"),
+  route("api/auth/magic/verify", "routes/api.auth.magic.verify.ts"),
 ] satisfies RouteConfig;

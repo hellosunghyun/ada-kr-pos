@@ -152,3 +152,117 @@ All tests pass with exit code 0:
 - Added user-session index helpers (`registerSessionInUserIndex`, `deleteAllUserSessions`) for mass invalidation scenarios.
 - Added cookie helpers with secure defaults: `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`, plus optional `Domain` via `COOKIE_DOMAIN`.
 - Vitest path alias resolution needed `vite-tsconfig-paths` in `apps/auth/vitest.config.ts` for `~/*` imports during test runs.
+
+## Task 6: Apple Sign-In flow (jose)
+
+- Apple OAuth authorize endpoint must include `response_mode=form_post`; callback route therefore needs an `action` handler (POST) and can return 405 from `loader` for GET.
+- `jose` `SignJWT` + `importPKCS8` works in the Worker runtime for Apple `client_secret` generation with ES256 (`iss=team_id`, `sub=client_id`, `aud=https://appleid.apple.com`).
+- Apple ID token verification is safe with `createRemoteJWKSet(new URL("https://appleid.apple.com/auth/keys"))` + `jwtVerify` using `issuer` and `audience` checks.
+- Worker-safe JWT payload decoding for non-verifying extract helpers should normalize base64url + padding before `atob` to avoid malformed decode edge cases.
+- `pnpm --filter auth test -- apple` currently runs the auth test set and passed (`3 files`, `20 tests`) after Apple tests were added.
+- `pnpm --filter auth build` passes with new Apple API route chunks generated.
+
+## Task 8: CSRF Utilities + Auth Helpers (Remix loader/action helpers)
+
+### Completed
+- Created `apps/auth/app/middleware/csrf.server.ts` with `validateCsrf(request)` function
+- Created `apps/auth/app/middleware/auth.server.ts` with auth context helpers
+- Created `apps/auth/app/__tests__/middleware.test.ts` with 18 comprehensive tests
+- All 38 tests pass (20 existing + 18 new middleware tests)
+- `pnpm typecheck` → 0 errors
+- Committed: `feat(auth): add CSRF validation and auth helper utilities for Remix`
+
+### CSRF Validation Pattern
+- **GET/HEAD/OPTIONS**: Always pass (no CSRF check needed)
+- **POST/PUT/PATCH/DELETE**: Validate Origin header matches request URL origin
+- Mismatch or missing Origin → throw `new Response('Forbidden', { status: 403 })`
+- No CSRF token form fields — Origin header validation only
+
+### Auth Middleware Functions
+1. **getAuthContext(request, context)**: Internal helper, returns `AuthContext` (union of auth/unauth)
+   - Extracts session ID from Cookie header via `getSessionIdFromCookie`
+   - Looks up session in KV via `getSession`
+   - Queries user from D1 via `getUserById` (with error handling for missing table)
+   - Returns `AdaposAuthContext` if valid, `AdaposUnauthContext` if not
+
+2. **requireAuthPage(request, context)**: For HTML page routes
+   - Calls `getAuthContext` internally
+   - Throws `redirect('/login')` if unauthenticated
+   - Returns `AdaposAuthContext` if authenticated
+
+3. **requireAuthApi(request, context)**: For JSON API routes
+   - Calls `getAuthContext` internally
+   - Throws `new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } })` if unauthenticated
+   - Returns `AdaposAuthContext` if authenticated
+
+4. **optionalAuth(request, context)**: For routes that work with or without auth
+   - Calls `getAuthContext` internally
+   - Never throws — returns `AdaposUnauthContext` if no session
+   - Returns `AdaposAuthContext` if authenticated
+
+### Context Access Pattern
+```typescript
+const env = (context as any).cloudflare.env as Env;
+const kv = env.SESSIONS;
+const db = createDb(env.DB);
+```
+
+### getUserById Implementation
+- Wraps D1 query in try-catch to handle missing table gracefully
+- Maps D1 user row to `AdaposUser` shape
+- Parses `snsLinks` JSON with fallback to empty object
+- Converts timestamps from Date to milliseconds
+
+### Test Coverage (18 tests)
+**CSRF Validation (10 tests)**:
+- GET/HEAD/OPTIONS pass without Origin check
+- POST/PUT/PATCH/DELETE throw 403 without Origin
+- POST/PUT/PATCH/DELETE throw 403 with mismatched Origin
+- POST/PUT/PATCH/DELETE pass with matching Origin
+
+**requireAuthPage (3 tests)**:
+- Throws redirect('/login') for missing session
+- Throws redirect('/login') for invalid session ID
+- Throws redirect('/login') when session exists but user not found
+
+**requireAuthApi (3 tests)**:
+- Throws 401 JSON for missing session
+- Throws 401 JSON for invalid session ID
+- Throws 401 JSON when session exists but user not found
+
+**optionalAuth (3 tests)**:
+- Returns UnauthContext for missing session (no throw)
+- Returns UnauthContext for invalid session ID (no throw)
+- Returns UnauthContext when session exists but user not found (no throw)
+
+### Key Learnings
+- Remix has NO middleware pipeline — use utility functions called inside loader/action
+- Page routes use `throw redirect()` for unauthenticated redirects
+- API routes use `throw new Response()` for JSON error responses
+- CF bindings accessed via `context.cloudflare.env` (from load-context.ts)
+- D1 queries can fail if table doesn't exist — wrap in try-catch for graceful degradation
+- TypeScript: `e.json()` returns `unknown` — cast to typed interface when accessing properties
+- Vitest pool works with real miniflare D1 bindings — no need for mock D1 in tests
+
+## Task 9: User CRUD + /api/me routes
+
+- `apps/auth/app/lib/user.server.ts` centralizes D1 user CRUD and reuses one row-to-`AdaposUser` mapper so route and auth code stay consistent on timestamp and `snsLinks` serialization.
+- D1 `sns_links` remains TEXT in schema, so user writes must `JSON.stringify()` and reads must parse defensively back to `{}` on invalid or null values.
+- In the current Vitest workers setup, runtime bindings work from `import { env } from "cloudflare:workers"`; `cloudflare:test` types exist, but direct runtime import failed in this repo.
+- Route tests can exercise Remix loader/action modules directly by passing a minimal `AppLoadContext` with `context.cloudflare.env` bindings plus real worker `Request` objects.
+- Recreating the `users` table in `beforeEach()` keeps D1-backed tests isolated without adding extra test-only helpers or touching shared setup files.
+
+## Task 10: Email verification flow (Resend)
+
+- `apps/auth/app/lib/email.server.ts` keeps verification tokens single-use by storing `verify:{email}` in KV and deleting the entry immediately after a successful match.
+- The repo's existing `mockResend()` helper is enough to test native `fetch` calls to `https://api.resend.com/emails`, so no Resend SDK or extra test helpers are needed.
+- In this test setup, route integration tests are stable when they recreate the `users` table, use real worker bindings from `cloudflare:workers`, and invoke the route `action`/`loader` functions directly.
+- `pnpm test`, `pnpm typecheck`, and `pnpm --filter auth build` all passed after adding the verification routes and email tests.
+
+## Task 10b: Magic link login + account linking
+
+- Magic login tokens are stored as `magic:{token}` JSON payloads in `MAGIC_TOKENS` with `expirationTtl: 900` (15 minutes), and tokens are deleted immediately on first successful verification to enforce single-use.
+- `sendMagicLink` should normalize to lowercase and hard-reject non-`@pos.idserve.net` domains with the exact error message `Invalid email domain. Only @pos.idserve.net allowed.` so routes can map it cleanly to HTTP 400.
+- Account linking works by checking `getUserByVerifiedEmail(db, email)` first; if absent, create a new user ID with `magic_${crypto.randomUUID()}` and set `verifiedEmail` + `isVerified: true` at insert time.
+- Route `/api/auth/magic/verify` should verify token from `MAGIC_TOKENS`, create the login session in `SESSIONS`, then set the cookie via `setSessionCookie` and redirect to `/mypage`.
+- Existing test conventions still use `env` from `cloudflare:workers` plus `mockResend()` to capture email links and extract the token for integration-style assertions.
