@@ -1,7 +1,2 @@
 === Health Check ===
 {"status":"ok"}
-
-=== Verification ===
-✓ Health endpoint responds with correct JSON
-✓ HTTP status 200
-✓ Content-Type: application/json

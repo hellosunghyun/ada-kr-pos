@@ -12,7 +12,9 @@
     "target": "ES2022",
     "strict": true,
     "allowJs": true,
+    "allowImportingTsExtensions": true,
     "skipLibCheck": true,
+    "rootDirs": [".", ".react-router/types"],
     "baseUrl": ".",
     "paths": {
       "~/*": ["./app/*"]
