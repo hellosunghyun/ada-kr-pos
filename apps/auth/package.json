@@ -13,17 +13,19 @@
   },
   "dependencies": {
     "@adapos/auth": "workspace:*",
+    "@react-router/cloudflare": "^7.4.0",
+    "drizzle-orm": "^0.45.1",
     "isbot": "^4.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router": "^7.4.0",
-    "@react-router/cloudflare": "^7.4.0"
+    "react-router": "^7.4.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250124.0",
     "@react-router/dev": "^7.4.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "drizzle-kit": "^0.31.9",
     "typescript": "^5.7.3",
     "vite": "^6.2.0",
     "vite-tsconfig-paths": "^5.1.4",
