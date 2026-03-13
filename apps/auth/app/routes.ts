@@ -4,6 +4,7 @@ export default [
   index("routes/_index.tsx"),
   route("login", "routes/login.tsx"),
   route("mypage", "routes/mypage.tsx"),
+  route("developer", "routes/developer.tsx"),
   route("api/health", "routes/api.health.ts"),
   route("api/me", "routes/api.me.ts"),
   route("api/me/photo", "routes/api.me.photo.ts"),
@@ -14,4 +15,6 @@ export default [
   route("api/auth/magic/send", "routes/api.auth.magic.send.ts"),
   route("api/auth/magic/verify", "routes/api.auth.magic.verify.ts"),
   route("api/auth/logout", "routes/api.auth.logout.ts"),
+  route("api/developer/apps", "routes/api.developer.apps.ts"),
+  route("api/developer/apps/:id", "routes/api.developer.apps.$id.ts"),
 ] satisfies RouteConfig;
