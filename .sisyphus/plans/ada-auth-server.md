@@ -244,7 +244,7 @@ Max Concurrent: 5 (Wave 1b, Wave 2c)
 > Implementation + Test = ONE Task. Never separate.
 > EVERY task MUST have: Recommended Agent Profile + Parallelization info + QA Scenarios.
 
-- [ ] 1. Remix 모노레포 스캐폴딩 + 도구 설정
+- [x] 1. Remix 모노레포 스캐폴딩 + 도구 설정
 
   **What to do**:
   - pnpm workspace 초기화: `pnpm-workspace.yaml`에 `apps/*`, `packages/*` 등록

@@ -1,0 +1,13 @@
+=== Typecheck (root.tsx and global.css only) ===
+
+root.tsx diagnostics:
+No errors found
+
+=== Files created ===
+-rw-r--r--  1 hellosunghyun  staff  5160 Mar 13 22:06 /Users/hellosunghyun/Documents/Github/adapos.tech/apps/auth/app/styles/global.css
+
+=== Layout elements in root.tsx ===
+48:      <header className="site-header">
+53:          <nav className="site-nav" aria-label="Main navigation">
+95:      <main className="main-content">
+98:      <footer className="site-footer">

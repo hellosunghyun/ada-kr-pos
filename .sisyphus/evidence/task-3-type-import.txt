@@ -1,0 +1,30 @@
+=== Task 3: TypeScript Type Definitions ===
+
+=== Typecheck Result ===
+
+> adapos@0.0.1 typecheck /Users/hellosunghyun/Documents/Github/adapos.tech
+> pnpm --filter auth typecheck && pnpm --filter '@adapos/auth' typecheck
+
+
+> auth@0.0.1 typecheck /Users/hellosunghyun/Documents/Github/adapos.tech/apps/auth
+> react-router typegen && tsc --noEmit
+
+
+> @adapos/auth@0.0.1 typecheck /Users/hellosunghyun/Documents/Github/adapos.tech/packages/auth-sdk
+> tsc --noEmit
+
+Exit Code: 0
+
+=== Env Bindings Verification ===
+  DB: D1Database;
+  SESSIONS: KVNamespace;
+  PROFILE_PHOTOS: R2Bucket;
+  APPLE_CLIENT_ID: string;
+  RESEND_API_KEY: string;
+
+=== Created Files ===
+total 16
+drwxr-xr-x  4 hellosunghyun  staff   128 Mar 13 22:03 .
+drwxr-xr-x  6 hellosunghyun  staff   192 Mar 13 21:55 ..
+-rw-r--r--  1 hellosunghyun  staff   172 Mar 13 22:03 index.ts
+-rw-r--r--  1 hellosunghyun  staff  1381 Mar 13 22:03 types.ts
