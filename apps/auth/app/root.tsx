@@ -4,7 +4,22 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  NavLink,
+  useRouteLoaderData,
+  Form,
 } from "react-router";
+import type { LinksFunction, LoaderFunctionArgs } from "react-router";
+import globalCss from "~/styles/global.css?url";
+
+export const links: LinksFunction = () => [
+  { rel: "stylesheet", href: globalCss },
+];
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  const cookieHeader = request.headers.get("Cookie") ?? "";
+  const isAuthenticated = cookieHeader.includes("session=");
+  return { isAuthenticated };
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -25,5 +40,64 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  const data = useRouteLoaderData<typeof loader>("root");
+  const isAuthenticated = data?.isAuthenticated ?? false;
+
+  return (
+    <div className="app-container">
+      <header className="site-header">
+        <div className="header-inner">
+          <NavLink to="/" className="site-logo">
+            ADA Auth
+          </NavLink>
+          <nav className="site-nav" aria-label="Main navigation">
+            {isAuthenticated ? (
+              <>
+                <NavLink
+                  to="/mypage"
+                  className={({ isActive }) =>
+                    `nav-link${isActive ? " active" : ""}`
+                  }
+                >
+                  마이페이지
+                </NavLink>
+                <NavLink
+                  to="/developer"
+                  className={({ isActive }) =>
+                    `nav-link${isActive ? " active" : ""}`
+                  }
+                >
+                  개발자 포털
+                </NavLink>
+                <Form
+                  method="post"
+                  action="/api/auth/logout"
+                  style={{ display: "inline" }}
+                >
+                  <button type="submit" className="nav-link nav-link-logout">
+                    로그아웃
+                  </button>
+                </Form>
+              </>
+            ) : (
+              <NavLink
+                to="/login"
+                className={({ isActive }) =>
+                  `nav-link${isActive ? " active" : ""}`
+                }
+              >
+                로그인
+              </NavLink>
+            )}
+          </nav>
+        </div>
+      </header>
+      <main className="main-content">
+        <Outlet />
+      </main>
+      <footer className="site-footer">
+        <p>© Apple Developer Academy @ POSTECH</p>
+      </footer>
+    </div>
+  );
 }
