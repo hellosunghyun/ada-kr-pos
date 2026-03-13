@@ -1,0 +1,13 @@
+=== Apple Sign-In Routes ===
+4: const APPLE_JWKS_URL = "https://appleid.apple.com/auth/keys";
+5: const APPLE_TOKEN_URL = "https://appleid.apple.com/auth/token";
+6: const APPLE_ISSUER = "https://appleid.apple.com";
+136: return `https://appleid.apple.com/auth/authorize?${params.toString()}`;
+
+=== Test Results ===
+Command: pnpm --filter auth test -- apple
+Test Files 3 passed (3)
+Tests 20 passed (20)
+
+Command: pnpm --filter auth build
+Build status: success
