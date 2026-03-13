@@ -11,6 +11,12 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.js",
       "default": "./dist/index.mjs"
+    },
+    "./hono": {
+      "types": "./dist/hono.d.ts",
+      "import": "./dist/hono.mjs",
+      "require": "./dist/hono.js",
+      "default": "./dist/hono.mjs"
     }
   },
   "scripts": {
@@ -19,8 +25,12 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "typescript": "^5.7.3",
+    "hono": "^4.12.7",
     "tsup": "^8.4.0",
+    "typescript": "^5.7.3",
     "vitest": "^3.0.5"
+  },
+  "peerDependencies": {
+    "hono": ">=4.0.0"
   }
 }
