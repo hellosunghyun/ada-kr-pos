@@ -322,7 +322,7 @@ Max Concurrent: 5 (Wave 1b, Wave 2c)
   - Message: `chore: scaffold monorepo with remix, pnpm workspaces, vitest`
   - Files: `package.json, pnpm-workspace.yaml, apps/auth/*, packages/auth-sdk/*, tsconfig.json, biome.json, .gitignore, .nvmrc`
 
-- [ ] 2. D1 스키마 + Drizzle ORM 설정
+- [x] 2. D1 스키마 + Drizzle ORM 설정
 
   **What to do**:
   - `drizzle-orm` + `drizzle-kit` 설치 (`apps/auth`)
@@ -393,7 +393,7 @@ Max Concurrent: 5 (Wave 1b, Wave 2c)
   - Files: `apps/auth/app/db/*, apps/auth/drizzle.config.ts, apps/auth/migrations/*`
   - Pre-commit: `pnpm typecheck`
 
-- [ ] 3. TypeScript 타입 정의
+- [x] 3. TypeScript 타입 정의
 
   **What to do**:
   - `packages/auth-sdk/src/types.ts` — 공유 타입 (SDK와 서버 모두 사용):
@@ -509,7 +509,7 @@ Max Concurrent: 5 (Wave 1b, Wave 2c)
   - Files: `packages/auth-sdk/src/types.ts, apps/auth/app/types/env.ts`
   - Pre-commit: `pnpm typecheck`
 
-- [ ] 4. Vitest + miniflare 테스트 인프라
+- [x] 4. Vitest + miniflare 테스트 인프라
 
   **What to do**:
   - `vitest` + `@cloudflare/vitest-pool-workers` 설치 (apps/auth)
@@ -587,7 +587,7 @@ Max Concurrent: 5 (Wave 1b, Wave 2c)
   - Files: `apps/auth/vitest.config.ts, apps/auth/app/__tests__/*, packages/auth-sdk/vitest.config.ts, vitest.workspace.ts`
   - Pre-commit: `pnpm test`
 
-- [ ] 5. Apple Sign in with Apple 설정 가이드 문서
+- [x] 5. Apple Sign in with Apple 설정 가이드 문서
 
   **What to do**:
   - `docs/apple-setup.md` 작성 — Apple Developer Console에서의 설정 단계:
@@ -820,7 +820,7 @@ Max Concurrent: 5 (Wave 1b, Wave 2c)
   - Files: `apps/auth/app/lib/session.ts, apps/auth/app/lib/cookie.ts, apps/auth/app/__tests__/session.test.ts`
   - Pre-commit: `pnpm test`
 
-- [ ] 8. CSRF 유틸 + Auth 유틸 (Remix loader/action 헬퍼)
+- [x] 8. CSRF 유틸 + Auth 유틸 (Remix loader/action 헬퍼)
 
   **What to do**:
   - TDD: 테스트 먼저 → 구현
@@ -959,7 +959,7 @@ Max Concurrent: 5 (Wave 1b, Wave 2c)
   - Files: `apps/auth/app/middleware/csrf.server.ts, apps/auth/app/middleware/auth.server.ts, apps/auth/app/__tests__/middleware.test.ts`
   - Pre-commit: `pnpm test`
 
-- [ ] 9. 유저 CRUD (D1 쿼리, Drizzle)
+- [x] 9. 유저 CRUD (D1 쿼리, Drizzle)
 
   **What to do**:
   - TDD: 테스트 먼저 → 구현
@@ -1038,7 +1038,7 @@ Max Concurrent: 5 (Wave 1b, Wave 2c)
   - Files: `apps/auth/app/lib/user.ts, apps/auth/app/routes/me.ts, apps/auth/app/__tests__/user.test.ts`
   - Pre-commit: `pnpm test`
 
-- [ ] 10. 이메일 인증 플로우 (Resend 연동)
+- [x] 10. 이메일 인증 플로우 (Resend 연동)
 
   **What to do**:
   - TDD: 테스트 먼저 → 구현
@@ -1114,7 +1114,7 @@ Max Concurrent: 5 (Wave 1b, Wave 2c)
   - Files: `apps/auth/app/lib/email.server.ts, apps/auth/app/routes/api.verify.*.ts, apps/auth/app/__tests__/email.test.ts`
   - Pre-commit: `pnpm test`
 
-- [ ] 10b. 매직링크 로그인 플로우 (@pos.idserve.net 전용)
+- [x] 10b. 매직링크 로그인 플로우 (@pos.idserve.net 전용)
 
   **What to do**:
   - TDD: 테스트 먼저 → 구현
@@ -1240,7 +1240,7 @@ Max Concurrent: 5 (Wave 1b, Wave 2c)
   - Files: `apps/auth/app/lib/magic-link.server.ts, apps/auth/app/routes/api.auth.magic.*.ts, apps/auth/app/__tests__/magic-link.test.ts`
   - Pre-commit: `pnpm test`
 
-- [ ] 11. 로그인 페이지 (Apple Sign-In + 매직링크 폼)
+- [x] 11. 로그인 페이지 (Apple Sign-In + 매직링크 폼)
 
   **What to do**:
   - `apps/auth/app/routes/login.tsx` — Remix 로그인 페이지 라우트:
@@ -1333,7 +1333,7 @@ Max Concurrent: 5 (Wave 1b, Wave 2c)
   - Message: `feat(ui): add login page, my page, developer portal with shared layout`
   - Files: `apps/auth/app/routes/login.tsx, apps/auth/app/routes/_index.tsx, apps/auth/app/routes/api.auth.logout.ts`
 
-- [ ] 12. 마이페이지 (프로필 조회/편집, R2 사진 업로드)
+- [x] 12. 마이페이지 (프로필 조회/편집, R2 사진 업로드)
 
   **What to do**:
   - `apps/auth/app/routes/mypage.tsx` — Remix 마이페이지 라우트 (`loader` + `action`):
@@ -1411,7 +1411,7 @@ Max Concurrent: 5 (Wave 1b, Wave 2c)
   - Message: `feat(ui): add login page, my page, developer portal with shared layout`
   - Files: `apps/auth/app/pages/mypage.tsx`
 
-- [ ] 13. 개발자 포털 (앱 등록, API 키 발급/관리)
+- [x] 13. 개발자 포털 (앱 등록, API 키 발급/관리)
 
   **What to do**:
   - `apps/auth/app/routes/developer.tsx` — Remix 개발자 포털 라우트 (`loader` + `action`):
@@ -1497,7 +1497,7 @@ Max Concurrent: 5 (Wave 1b, Wave 2c)
   - Message: `feat(ui): add login page, my page, developer portal with shared layout`
   - Files: `apps/auth/app/pages/developer.tsx, apps/auth/app/routes/developer.ts, apps/auth/app/lib/apikey.ts, apps/auth/app/__tests__/developer.test.ts`
 
-- [ ] 14. Remix 공유 레이아웃 + 스타일 (root.tsx, CSS, 네비게이션)
+- [x] 14. Remix 공유 레이아웃 + 스타일 (root.tsx, CSS, 네비게이션)
 
   **What to do**:
   - `apps/auth/app/root.tsx` — Remix 루트 레이아웃:
@@ -1577,7 +1577,7 @@ Max Concurrent: 5 (Wave 1b, Wave 2c)
   - Message: `feat(ui): add login page, my page, developer portal with shared layout`
   - Files: `apps/auth/app/pages/layout.tsx, apps/auth/app/static/styles.css`
 
-- [ ] 15. @adapos/auth SDK 코어 (HTTP 클라이언트, 타입)
+- [x] 15. @adapos/auth SDK 코어 (HTTP 클라이언트, 타입)
 
   **What to do**:
   - TDD: 테스트 먼저 → 구현
@@ -1659,7 +1659,7 @@ Max Concurrent: 5 (Wave 1b, Wave 2c)
   - Files: `packages/auth-sdk/src/*`
   - Pre-commit: `pnpm --filter @adapos/auth test`
 
-- [ ] 16. Hono 미들웨어 (adaposAuth, getAuth)
+- [x] 16. Hono 미들웨어 (adaposAuth, getAuth)
 
   **What to do**:
   - TDD: 테스트 먼저 → 구현
@@ -1756,7 +1756,7 @@ Max Concurrent: 5 (Wave 1b, Wave 2c)
   - Message: `feat(sdk): add @adapos/auth SDK with Hono and Express middleware`
   - Files: `packages/auth-sdk/src/hono.ts, packages/auth-sdk/src/__tests__/hono.test.ts`
 
-- [ ] 17. Express/generic 미들웨어
+- [x] 17. Express/generic 미들웨어
 
   **What to do**:
   - `packages/auth-sdk/src/express.ts`:
@@ -1823,7 +1823,7 @@ Max Concurrent: 5 (Wave 1b, Wave 2c)
   - Message: `feat(sdk): add @adapos/auth SDK with Hono and Express middleware`
   - Files: `packages/auth-sdk/src/express.ts, packages/auth-sdk/src/generic.ts, packages/auth-sdk/src/__tests__/express.test.ts`
 
-- [ ] 18. SDK README + 사용 예제
+- [x] 18. SDK README + 사용 예제
 
   **What to do**:
   - `packages/auth-sdk/README.md`:
@@ -1890,7 +1890,7 @@ Max Concurrent: 5 (Wave 1b, Wave 2c)
   - Message: `docs(sdk): add SDK README with usage examples`
   - Files: `packages/auth-sdk/README.md`
 
-- [ ] 19. SSO 쿠키 설정 + 서브도메인 통합 테스트
+- [x] 19. SSO 쿠키 설정 + 서브도메인 통합 테스트
 
   **What to do**:
   - 전체 인증 플로우를 실제 쿠키 설정과 함께 통합 검증
@@ -1968,7 +1968,7 @@ Max Concurrent: 5 (Wave 1b, Wave 2c)
   - Files: `apps/auth/app/__tests__/sso-integration.test.ts, apps/auth/app/lib/cookie.server.ts`
   - Pre-commit: `pnpm test`
 
-- [ ] 20. API 키 검증 엔드포인트 + Rate limiting
+- [x] 20. API 키 검증 엔드포인트 + Rate limiting
 
   **What to do**:
   - `apps/auth/app/routes/api.sdk.verify-session.ts` — SDK용 세션 검증 리소스 라우트:
@@ -2045,7 +2045,7 @@ Max Concurrent: 5 (Wave 1b, Wave 2c)
   - Files: `apps/auth/app/routes/api.sdk.*.ts, apps/auth/app/lib/rate-limit.server.ts, apps/auth/app/__tests__/sdk-api.test.ts`
   - Pre-commit: `pnpm test`
 
-- [ ] 21. Cloudflare Pages 배포 설정
+- [x] 21. Cloudflare Pages 배포 설정
 
   **What to do**:
   - `apps/auth/wrangler.toml` 최종 검증 + 프로덕션 설정:
@@ -2120,7 +2120,7 @@ Max Concurrent: 5 (Wave 1b, Wave 2c)
   - Files: `apps/auth/wrangler.toml, apps/auth/scripts/setup-secrets.sh`
   - Pre-commit: `pnpm build`
 
-- [ ] 22. 에러 핸들링 + 로깅 통합
+- [x] 22. 에러 핸들링 + 로깅 통합
 
   **What to do**:
   - `apps/auth/app/lib/error.server.ts` — 통합 에러 핸들러:

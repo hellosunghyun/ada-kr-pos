@@ -30,3 +30,7 @@ bucket_name = "ada-auth-profile-photos"
 
 [vars]
 COOKIE_DOMAIN = ".adapos.tech"
+AUTH_URL = "https://adapos.tech"
+
+[dev]
+port = 5173

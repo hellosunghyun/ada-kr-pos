@@ -163,6 +163,11 @@ export async function findOrCreateUser(
     if (existingByEmail) {
       return existingByEmail;
     }
+
+    const existingByVerifiedEmail = await getUserByVerifiedEmail(db, data.appleEmail);
+    if (existingByVerifiedEmail) {
+      return existingByVerifiedEmail;
+    }
   }
 
   return createUser(db, {

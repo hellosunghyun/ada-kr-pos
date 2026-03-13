@@ -104,9 +104,19 @@ export default function MyPage() {
           {displayUser.isVerified ? (
             <span className="verified-badge">✓ 구성원 인증 완료</span>
           ) : (
-            <a href="/api/verify/send" className="verify-btn">
-              이메일 인증하기
-            </a>
+            <Form method="post" action="/api/verify/send" className="verify-form">
+              <input
+                type="email"
+                name="email"
+                placeholder="your@pos.idserve.net"
+                required
+                pattern="^[^@]+@pos\.idserve\.net$"
+                title="@pos.idserve.net 이메일만 사용할 수 있습니다."
+              />
+              <button type="submit" className="verify-btn">
+                이메일 인증하기
+              </button>
+            </Form>
           )}
         </div>
       </div>

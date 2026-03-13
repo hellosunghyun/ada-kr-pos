@@ -266,3 +266,332 @@ const db = createDb(env.DB);
 - Account linking works by checking `getUserByVerifiedEmail(db, email)` first; if absent, create a new user ID with `magic_${crypto.randomUUID()}` and set `verifiedEmail` + `isVerified: true` at insert time.
 - Route `/api/auth/magic/verify` should verify token from `MAGIC_TOKENS`, create the login session in `SESSIONS`, then set the cookie via `setSessionCookie` and redirect to `/mypage`.
 - Existing test conventions still use `env` from `cloudflare:workers` plus `mockResend()` to capture email links and extract the token for integration-style assertions.
+
+
+## Task 11: Login Page UI (Apple Sign-In + Magic Link)
+
+### Completed
+- Created `apps/auth/app/routes/login.tsx` with Apple Sign-In button and magic link form
+- Updated `apps/auth/app/routes/_index.tsx` with auth-aware redirect (→ /mypage if auth, → /login if not)
+- Created `apps/auth/app/routes/api.auth.logout.ts` with session deletion and cookie clearing
+- Added login page CSS to `apps/auth/app/styles/global.css` using existing design system
+- Registered `/api/auth/logout` route in `routes.ts`
+- `pnpm typecheck` → 0 errors
+- `pnpm test` → 79 tests pass (66 auth + 13 SDK)
+- Committed: `feat(ui): add login page with Apple Sign-In and magic link form`
+
+### Key Patterns
+- Login page uses `optionalAuth` in loader → redirects authenticated users to /mypage
+- Magic link form action forwards to `/api/auth/magic/send` API route
+- Apple Sign-In button: black background, white text, Apple logo SVG (Apple HIG compliant)
+- Dark mode: Apple button inverts to white background with black text
+- Form validation: HTML5 pattern + server-side domain check for @pos.idserve.net
+- Logout route: `deleteSession` from KV + `clearSessionCookie` with COOKIE_DOMAIN from Env
+
+### Design System Usage
+- CSS variables: `--color-primary`, `--color-surface`, `--color-text`, `--color-border`, etc.
+- Dark mode support via `@media (prefers-color-scheme: dark)`
+- Consistent with existing button, form, and card patterns from global.css
+
+## Task 12: My Page (Profile Management UI)
+
+### Completed
+- Created `apps/auth/app/routes/mypage.tsx` with profile editing and R2 photo upload
+- Added mypage-specific CSS styles to `apps/auth/app/styles/global.css`
+- Registered `/mypage` route in `routes.ts`
+- `pnpm typecheck` → 0 errors
+- `pnpm test` → 79 tests pass (66 auth + 13 SDK)
+- Committed: `feat(ui): add my page with profile editing and photo upload`
+
+### Key Patterns
+- **Dual action handling**: Single action handles both `multipart/form-data` (photo upload) and regular form submissions (profile update) by checking `Content-Type` header
+- **R2 photo upload**: Use `env.PROFILE_PHOTOS` from `Env` type (not `R2Bucket` from workers-types) to avoid type mismatches with `file.stream()`
+- **Photo URL storage**: Store as `/api/photos/{key}` (R2 path), not full URL
+- **Display user pattern**: `actionData?.user ?? user` shows updated data immediately after successful action
+- **Auto-submit photo form**: `onChange={(e) => { if (e.target.files?.length) e.target.form?.submit(); }}`
+
+### Design System
+- My page uses existing CSS variables (`--color-primary`, `--color-surface`, etc.)
+- Profile photo: 80px circular with fallback background
+- Verification badge: green for verified, blue link for unverified
+- Mobile responsive: stack vertically on small screens
+
+### Type Safety
+- Import `Env` from `~/types/env` for CF bindings
+- `file.stream()` type compatibility: `Env.PROFILE_PHOTOS` works, but `R2Bucket` cast fails
+
+## Task 13: Developer Portal (API Key Management)
+
+### Completed
+- Created `apps/auth/app/lib/apikey.server.ts` - API key generation + SHA-256 hashing (Web Crypto API)
+- Created `apps/auth/app/routes/api.developer.apps.ts` - GET/POST /api/developer/apps
+- Created `apps/auth/app/routes/api.developer.apps.$id.ts` - DELETE/PATCH /api/developer/apps/:id
+- Created `apps/auth/app/routes/developer.tsx` - Developer portal page with app management
+- Added developer portal CSS styles to `apps/auth/app/styles/global.css`
+- Registered 3 new routes in `routes.ts`
+- Created `apps/auth/app/__tests__/developer.test.ts` - 15 comprehensive tests
+- `pnpm test` → 81 tests pass (68 auth + 13 SDK, up from 79)
+- `pnpm typecheck` → 0 errors
+- Committed: `feat(developer): add developer portal with API key management`
+
+### Key Patterns
+
+**API Key Security**:
+- Generate with `ak_${crypto.randomUUID()}` prefix
+- Hash with Web Crypto API `crypto.subtle.digest('SHA-256', data)` — NOT Node.js `crypto`
+- Store only hash in D1, never plaintext
+- Prefix (`ak_` + 8 chars = 11 total) stored for display identification
+- Full key returned ONCE on creation, never again
+
+**Verification Gate**:
+- Both GET and POST require `auth.user.isVerified === true`
+- Unverified users get 403 JSON error
+- Page shows "이메일 인증 후 이용 가능" message with link to /mypage
+
+**Ownership Verification**:
+- DELETE/PATCH always query with `and(eq(developerApps.id, appId), eq(developerApps.userId, auth.user.id))`
+- Returns 404 if app not found OR not owned by user
+- Prevents cross-user manipulation
+
+**Test Patterns**:
+- Use `env from "cloudflare:workers"` for real D1 bindings
+- Create `developer_apps` table in `beforeEach()` alongside `users`
+- Set `is_verified = 1` via raw SQL after `createUser` for verified user tests
+- Test full key exposure on POST, prefix-only on GET
+
+### Files Created
+- `apps/auth/app/lib/apikey.server.ts`
+- `apps/auth/app/routes/api.developer.apps.ts`
+- `apps/auth/app/routes/api.developer.apps.$id.ts`
+- `apps/auth/app/routes/developer.tsx`
+- `apps/auth/app/__tests__/developer.test.ts`
+
+## Task 16: Hono middleware for @adapos/auth
+
+- Hono integration fits cleanly as a separate `src/hono.ts` entrypoint with package exports on `@adapos/auth/hono`, keeping framework-specific code out of the core SDK client.
+- `c.set("auth", authFn)` preserves the lazy auth pattern in Hono; wrapping the lookup in a memoized async function avoids duplicate `verifySession()` calls when both middleware and route handlers read auth.
+- `requireAuth` should initialize the lazy auth function and then gate on `await getAuth(c)` before `next()` so unauthorized requests never reach the downstream handler.
+- Hono middleware tests run fine in the existing Node Vitest setup via `app.request(...)`; mocking `global.fetch` is enough because only the SDK client performs network I/O.
+
+## Task 17: Express/generic middleware for @adapos/auth
+
+### Completed
+- Created `packages/auth-sdk/src/express.ts` with `adaposAuthExpress` and `requireAuthExpress` middleware
+- Created `packages/auth-sdk/src/generic.ts` with `verifyRequest` framework-agnostic helper
+- Created `packages/auth-sdk/__tests__/express.test.ts` with 10 comprehensive tests
+- Updated `packages/auth-sdk/tsup.config.ts` to include express and generic entries
+- Updated `packages/auth-sdk/package.json` exports for express and generic
+- `pnpm test` → 111 tests pass (81 auth + 30 SDK, up from 101)
+- `pnpm typecheck` → 0 errors
+- Committed: `feat(sdk): add Express and generic middleware for @adapos/auth`
+
+### Express Middleware Pattern
+- **adaposAuthExpress**: Attaches lazy `req.auth()` function to Express request object
+  - Extracts session ID from Cookie header via `getSessionId()` helper
+  - Creates memoized auth function that only calls `verifySession()` when invoked
+  - Calls `next()` immediately — no blocking on auth lookup
+  - Type augmentation: `declare global { namespace Express { interface Request { auth?: () => Promise<AuthContext> } } }`
+
+- **requireAuthExpress**: Enforces authentication before route handler
+  - Attaches lazy auth function like `adaposAuthExpress`
+  - Immediately awaits `req.auth()` to check `isAuthenticated`
+  - Returns 401 JSON if unauthenticated, calls `next()` if authenticated
+  - Prevents downstream handler from executing for unauth requests
+
+### Generic Helper Pattern
+- **verifyRequest**: Framework-agnostic helper using Web standard `Request` object
+  - Works with CF Workers, Deno, Bun, and any Web standard environment
+  - Takes `Request` and `AdaposAuthConfig` as parameters
+  - Extracts session ID from Cookie header
+  - Returns `AuthContext` (union of auth/unauth) — NOT a lazy function
+  - Useful for middleware that can't attach properties to request objects
+
+### Session ID Extraction
+- Shared `getSessionId()` helper handles both raw and URL-encoded session IDs
+- Regex: `/(?:^|;\s*)session=([^;]+)/` matches session cookie value
+- Tries `decodeURIComponent()` first, falls back to raw value if decode fails
+- Reused across Hono, Express, and generic implementations
+
+### Lazy Auth Memoization
+- `createAuthFn()` returns a function that caches the auth promise
+- First call: executes `verifySession()` and stores promise
+- Subsequent calls: return cached promise (no duplicate network calls)
+- Pattern: `let authPromise: Promise<AuthContext> | undefined; return async () => { if (!authPromise) { authPromise = (async () => { ... })(); } return authPromise; }`
+
+### Test Coverage (10 tests)
+**Express Middleware (7 tests)**:
+- Attaches auth function to req
+- Returns UnauthContext when no session cookie
+- Returns AuthContext when valid session (mocked verifySession)
+- Returns 401 when auth is required and no session
+- Allows authenticated requests through requireAuthExpress
+- Does not call auth server until auth is invoked (lazy pattern)
+- Caches auth result on subsequent calls (memoization)
+
+**Generic Helper (3 tests)**:
+- Returns UnauthContext when no session cookie
+- Returns AuthContext when valid session
+- Handles URL-encoded session IDs correctly
+
+### Key Learnings
+- Express middleware uses `any` types for req/res/next to avoid requiring `@types/express` as a dependency
+- Lazy auth pattern is consistent across Hono and Express — same memoization strategy
+- Generic helper is synchronous in signature but async in execution (returns Promise<AuthContext>)
+- Session ID extraction is identical across all frameworks — extracted to shared helper
+- No new npm dependencies needed — reuses existing `createAdaposAuth` client
+- Build config: tsup entries must include all framework-specific files for proper exports
+- Package.json exports: each framework gets its own entry point with separate .mjs/.js/.d.ts files
+
+## T18: SDK README (2026-03-13)
+
+- `@adapos/auth/hono` exports: `adaposAuth`, `getAuth`, `requireAuth`
+- `@adapos/auth/express` exports: `adaposAuthExpress`, `requireAuthExpress`
+- `@adapos/auth/generic` exports: `verifyRequest`
+- `@adapos/auth` (root) exports: `createAdaposAuth`, `clearApiKeyCache`, `getCachedApiKeyValidity`, `setCachedApiKeyValidity`, plus all types
+- Auth is cookie-based: reads `session=` cookie from `Cookie` header
+- `adaposAuth` vs `requireAuth`: former is optional (pass-through), latter blocks with 401
+- Express: `req.auth` is a lazy async function, not the resolved value
+- Hono: `getAuth(c)` resolves the lazy auth function stored in context variables
+- `createAdaposAuth` is the low-level client for advanced use; middleware wrappers call it internally
+- API key cache TTL is 30s; `clearApiKeyCache()` resets it
+
+## Task 22: Error Handling + Logging Integration
+
+### Completed
+- Created `apps/auth/app/lib/error.server.ts` with AppError base class + 4 typed subclasses
+- Created `apps/auth/app/lib/logger.server.ts` with structured JSON logging + sensitive data masking
+- Updated `apps/auth/app/root.tsx` with ErrorBoundary export
+- Added error page CSS styles to `apps/auth/app/styles/global.css`
+- `pnpm test` → 111 tests pass (81 auth + 30 SDK, no regressions)
+- `pnpm typecheck` → 0 errors
+- Committed: `feat(error): add error handling and structured logging for auth server`
+
+### Error Class Hierarchy
+- **AppError**: Base class with `constructor(message, status, code)` and `toResponse()` method
+  - Returns `Response` with JSON `{ error, code }` and correct HTTP status
+  - `isAppError(e)` type guard for instanceof checks
+- **AuthError** (401): Session invalid/expired/missing
+- **ValidationError** (400): Invalid request data
+- **RateLimitError** (429): Rate limit exceeded
+- **AppleAuthError** (401): Apple OAuth flow failure
+
+### Logger Implementation
+- **log(level, message, meta?)**: Outputs JSON to console with timestamp
+  - Levels: `info`, `warn`, `error`, `debug`
+  - Format: `{ level, message, timestamp, ...meta }`
+- **logRequest(method, path, status, duration, userId?)**: HTTP request logging
+- **maskApiKey(key)**: Returns `${key.slice(0, 11)}...` (never expose full key)
+- **maskSessionId(id)**: Returns `${id.slice(0, 8)}...`
+- No external logging libraries — console.log only (CF Workers sends to Worker Logs)
+
+### ErrorBoundary Pattern
+- Exported from `root.tsx` as `export function ErrorBoundary()`
+- Uses `useRouteError()` and `isRouteErrorResponse()` from react-router
+- 404 errors: "페이지를 찾을 수 없습니다" (Page not found)
+- Other errors: "오류가 발생했습니다" (An error occurred)
+- Unhandled errors: "예상치 못한 오류가 발생했습니다" (Unexpected error)
+- NO stack traces in production output
+- Styled with existing CSS classes (`.error-page`, `.btn`, `.btn-primary`)
+- Includes header, footer, and home button for navigation
+
+### CSS Styling
+- Added `.error-page` section to global.css
+- Centered layout with max-width 500px
+- Uses existing CSS variables for colors and typography
+- Responsive padding (48px desktop, 24px mobile)
+- Home button styled with `.btn .btn-primary` classes
+
+### Key Learnings
+- Remix ErrorBoundary must be exported from root.tsx (not a component prop)
+- `isRouteErrorResponse()` checks if error is a Response (4xx/5xx)
+- Error responses include status code but NOT stack traces
+- CF Workers console.log automatically sends to Worker Logs (no SDK needed)
+- Masking functions use simple string slicing (no regex needed)
+- Error classes use `Object.setPrototypeOf()` for proper instanceof checks in TypeScript
+
+## Task 20: SDK API validation + KV rate limiting
+
+- Centralized SDK API key auth in `apps/auth/app/lib/rate-limit.server.ts` so each resource route can share Bearer parsing, D1 lookup, `verifyApiKey` confirmation, and KV-backed rate limiting.
+- The SDK API rate-limit key format is `ratelimit:{api_key_prefix}:{windowMinute}` with `expirationTtl: 60`; tests can hit the same endpoint 101 times to verify the 100 req/min cap without extra test-only hooks.
+- `POST /api/sdk/verify-session` should return the KV session payload plus `id: sessionId` to match the shared `AdaposSession` type used by `packages/auth-sdk`.
+- Resource-route tests remain simplest when they call route `loader`/`action` exports directly with real `cloudflare:workers` bindings, recreate D1 tables in `beforeEach()`, and create developer apps inline when shared helpers are out of scope.
+- `pnpm test`, `pnpm typecheck`, and `pnpm build` all passed after adding the SDK routes.
+
+## Task 19: SSO cookie config + subdomain integration tests
+
+- `setSessionCookie`/`clearSessionCookie` should accept an optional `cookieDomain`; domain attribute is emitted only when the value is a non-empty string, which covers both empty-string local dev and undefined env cases.
+- SSO cookie expectations for cross-subdomain auth remain: `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`, and explicitly not `SameSite=Strict`.
+- End-to-end SDK session verification tests are stable when they create users, sessions, and developer app API keys in real D1/KV bindings and invoke route `action` exports directly.
+- Sliding-window renewal is easiest to assert by seeding a session slightly past 50% elapsed and checking that `getSession()` returns an `expiresAt` greater than the seeded value.
+- Logout integration can be verified by sending a session cookie to `/api/auth/logout` action and asserting the corresponding `session:{id}` key is deleted from KV.
+
+## Task 21: Cloudflare Pages Deployment Configuration
+
+### Completed
+- Finalized `apps/auth/wrangler.toml` with all bindings and environment variables
+- Created `apps/auth/scripts/setup-secrets.sh` with all wrangler secret put commands
+- Verified `.gitignore` already includes `*.p8` pattern
+- `pnpm --filter auth build` → exit 0 (no build errors)
+- `pnpm typecheck` → 0 errors
+
+### wrangler.toml Configuration
+- **name**: `ada-auth`
+- **compatibility_date**: `2025-01-01` (recent date)
+- **compatibility_flags**: `["nodejs_compat"]` for Node.js API support
+- **pages_build_output_dir**: `./build/client` (React Router v7 default)
+- **D1 Database**: `binding = "DB"`, `database_name = "ada-auth-db"`, `database_id = "placeholder-replace-with-real-id"`
+- **KV Namespaces** (4 total):
+  - SESSIONS: `id = "placeholder-sessions-id"`
+  - EMAIL_TOKENS: `id = "placeholder-email-tokens-id"`
+  - MAGIC_TOKENS: `id = "placeholder-magic-tokens-id"`
+  - RATE_LIMITS: `id = "placeholder-rate-limits-id"`
+- **R2 Bucket**: `binding = "PROFILE_PHOTOS"`, `bucket_name = "ada-auth-profile-photos"`
+- **[vars] section**: `COOKIE_DOMAIN = ".adapos.tech"` (production SSO domain)
+- **[dev] section**: `vars = { COOKIE_DOMAIN = "" }` (local dev: no domain attribute on cookies)
+
+### setup-secrets.sh Script
+- Location: `apps/auth/scripts/setup-secrets.sh`
+- Executable: `chmod +x` applied
+- Commands: `wrangler secret put` for 6 secrets:
+  - APPLE_CLIENT_ID
+  - APPLE_TEAM_ID
+  - APPLE_KEY_ID
+  - APPLE_PRIVATE_KEY
+  - RESEND_API_KEY
+  - AUTH_SECRET
+- Script includes helpful comments and success message
+
+### Key Learnings
+- Placeholder IDs in wrangler.toml are safe for version control — actual IDs are set via Cloudflare dashboard
+- Local dev override via `[dev]` section allows empty `COOKIE_DOMAIN` without code changes
+- `pages_build_output_dir` is CF Pages-specific (not `main` like Workers)
+- Secrets are NEVER in wrangler.toml — always via `wrangler secret put` CLI
+- `.p8` files are already gitignored (Apple private key files)
+- Build output verified: 78 modules transformed, all chunks generated, gzip sizes computed
+- Typecheck verified: 0 errors across auth app and SDK package
+
+### Files Modified
+- `apps/auth/wrangler.toml`: Added `[dev]` section with local overrides
+- `apps/auth/scripts/setup-secrets.sh`: Created with all secret commands
+- `.gitignore`: Already includes `*.p8` (no changes needed)
+
+### Verification Results
+- `pnpm --filter auth build`: ✓ exit 0
+- `pnpm typecheck`: ✓ 0 errors
+- Script executable: ✓ chmod +x applied
+- All bindings match `apps/auth/app/types/env.ts`: ✓ verified
+
+## Task: Final Verification bugfix sweep (2026-03-14)
+
+- `login.tsx` must send JSON to `/api/auth/magic/send`; form-encoded payloads fail because the API route reads `request.json()`.
+- `mypage.tsx` verification CTA should be a real POST form (not anchor GET), and `api.verify.send.ts` now safely accepts both JSON and form-data email payloads.
+- `api.developer.apps.$id.ts` now supports method override via POST `_method=delete`, which matches the existing `developer.tsx` delete form.
+- Apple callback must run `findOrCreateUser(db, { id: sub, appleEmail })` before session creation to prevent missing D1 user rows on middleware lookups.
+- Session cookie creation in Apple callback should reuse shared helpers (`createSession`, `setSessionCookie`) instead of custom inline KV/cookie logic.
+- `wrangler.toml` now sets `AUTH_URL = "https://adapos.tech"` in `[vars]` and uses `[dev] port = 5173` (no `[dev].vars` inline overrides).
+- Verification run in `apps/auth`: `pnpm test` passed (10 files / 95 tests), `pnpm typecheck` passed (0 errors).
+
+## [2026-03-14] F1 final rerun
+- Apple account linking now satisfies the plan path: `findOrCreateUser()` checks `verifiedEmail`, and the Apple callback creates the session from the returned `user.id`, preserving magic-link account linkage.
+- Cookie parsing is now anchored with `(?:^|;\s*)session=`, which avoids matching prefixed cookie names while preserving normal session extraction.
+- Full workspace tests continue to pass after the fixes: auth 95/95, SDK 30/30.

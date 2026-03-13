@@ -7,6 +7,8 @@ import {
   NavLink,
   useRouteLoaderData,
   Form,
+  useRouteError,
+  isRouteErrorResponse,
 } from "react-router";
 import type { LinksFunction, LoaderFunctionArgs } from "react-router";
 import globalCss from "~/styles/global.css?url";
@@ -94,6 +96,86 @@ export default function App() {
       </header>
       <main className="main-content">
         <Outlet />
+      </main>
+      <footer className="site-footer">
+        <p>© Apple Developer Academy @ POSTECH</p>
+      </footer>
+    </div>
+  );
+}
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+
+  if (isRouteErrorResponse(error)) {
+    if (error.status === 404) {
+      return (
+        <div className="app-container">
+          <header className="site-header">
+            <div className="header-inner">
+              <NavLink to="/" className="site-logo">
+                ADA Auth
+              </NavLink>
+            </div>
+          </header>
+          <main className="main-content">
+            <div className="error-page">
+              <h1>페이지를 찾을 수 없습니다</h1>
+              <p>요청하신 페이지가 존재하지 않습니다.</p>
+              <NavLink to="/" className="btn btn-primary">
+                홈으로 돌아가기
+              </NavLink>
+            </div>
+          </main>
+          <footer className="site-footer">
+            <p>© Apple Developer Academy @ POSTECH</p>
+          </footer>
+        </div>
+      );
+    }
+
+    return (
+      <div className="app-container">
+        <header className="site-header">
+          <div className="header-inner">
+            <NavLink to="/" className="site-logo">
+              ADA Auth
+            </NavLink>
+          </div>
+        </header>
+        <main className="main-content">
+          <div className="error-page">
+            <h1>오류가 발생했습니다</h1>
+            <p>요청을 처리하는 중에 오류가 발생했습니다.</p>
+            <NavLink to="/" className="btn btn-primary">
+              홈으로 돌아가기
+            </NavLink>
+          </div>
+        </main>
+        <footer className="site-footer">
+          <p>© Apple Developer Academy @ POSTECH</p>
+        </footer>
+      </div>
+    );
+  }
+
+  return (
+    <div className="app-container">
+      <header className="site-header">
+        <div className="header-inner">
+          <NavLink to="/" className="site-logo">
+            ADA Auth
+          </NavLink>
+        </div>
+      </header>
+      <main className="main-content">
+        <div className="error-page">
+          <h1>오류가 발생했습니다</h1>
+          <p>예상치 못한 오류가 발생했습니다.</p>
+          <NavLink to="/" className="btn btn-primary">
+            홈으로 돌아가기
+          </NavLink>
+        </div>
       </main>
       <footer className="site-footer">
         <p>© Apple Developer Academy @ POSTECH</p>

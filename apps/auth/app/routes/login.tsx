@@ -31,10 +31,10 @@ export async function action({ request }: ActionFunctionArgs): Promise<ActionDat
   const response = await fetch(new URL("/api/auth/magic/send", request.url), {
     method: "POST",
     headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
+      "Content-Type": "application/json",
       Origin: request.headers.get("Origin") || new URL(request.url).origin,
     },
-    body: new URLSearchParams({ email }),
+    body: JSON.stringify({ email }),
   });
 
   if (response.ok) {

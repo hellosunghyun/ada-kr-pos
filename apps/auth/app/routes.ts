@@ -17,4 +17,7 @@ export default [
   route("api/auth/logout", "routes/api.auth.logout.ts"),
   route("api/developer/apps", "routes/api.developer.apps.ts"),
   route("api/developer/apps/:id", "routes/api.developer.apps.$id.ts"),
+  route("api/sdk/verify-session", "routes/api.sdk.verify-session.ts"),
+  route("api/sdk/verify-key", "routes/api.sdk.verify-key.ts"),
+  route("api/sdk/users/:id", "routes/api.sdk.users.$id.ts"),
 ] satisfies RouteConfig;

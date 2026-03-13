@@ -1,9 +1,14 @@
 import type { ActionFunctionArgs } from "react-router";
 import { redirect } from "react-router";
+import { createDb } from "~/db/index";
 import { exchangeAuthorizationCode, verifyIdToken } from "~/lib/apple.server";
+import { setSessionCookie } from "~/lib/cookie.server";
+import { createSession } from "~/lib/session.server";
+import { findOrCreateUser } from "~/lib/user.server";
+import type { Env } from "~/types/env";
 
 export async function action({ request, context }: ActionFunctionArgs) {
-  const env = context.cloudflare.env;
+  const env = (context as any).cloudflare.env as Env;
 
   try {
     const formData = await request.formData();
@@ -33,22 +38,11 @@ export async function action({ request, context }: ActionFunctionArgs) {
     await env.SESSIONS.delete(`apple_state:${state}`);
 
     const { idToken } = await exchangeAuthorizationCode(code, env);
-    const { sub } = await verifyIdToken(idToken, env.APPLE_CLIENT_ID);
-
-    const sessionId = crypto.randomUUID();
-    await env.SESSIONS.put(
-      `session:${sessionId}`,
-      JSON.stringify({
-        userId: sub,
-        createdAt: Date.now(),
-        expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
-      }),
-      { expirationTtl: 604800 }
-    );
-
-    const cookieDomain = env.COOKIE_DOMAIN ? `; Domain=${env.COOKIE_DOMAIN}` : "";
-    const maxAge = 7 * 24 * 60 * 60;
-    const cookieValue = `session=${sessionId}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}${cookieDomain}`;
+    const { sub, email } = await verifyIdToken(idToken, env.APPLE_CLIENT_ID);
+    const db = createDb(env.DB);
+    const user = await findOrCreateUser(db, { id: sub, appleEmail: email ?? undefined });
+    const { sessionId, expiresAt } = await createSession(env.SESSIONS, user.id);
+    const cookieValue = setSessionCookie(sessionId, expiresAt, env.COOKIE_DOMAIN);
 
     return redirect("/mypage", {
       headers: { "Set-Cookie": cookieValue },

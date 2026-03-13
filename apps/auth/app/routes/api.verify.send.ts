@@ -20,8 +20,17 @@ export async function action({ request, context }: ActionFunctionArgs) {
   await validateCsrf(request);
   await requireAuthApi(request, context);
 
-  const body = (await request.json()) as { email?: unknown };
-  const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+  const contentType = request.headers.get("Content-Type") ?? "";
+
+  let email = "";
+  if (contentType.includes("application/json")) {
+    const body = (await request.json()) as { email?: unknown };
+    email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+  } else {
+    const formData = await request.formData();
+    const rawEmail = formData.get("email");
+    email = typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : "";
+  }
 
   if (!email) {
     return Response.json({ error: "Email required" }, { status: 400 });

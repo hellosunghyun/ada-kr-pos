@@ -8,8 +8,13 @@ import { eq, and } from "drizzle-orm";
 
 export async function action({ request, context, params }: ActionFunctionArgs) {
   const method = request.method.toUpperCase();
+  const formData = method === "POST" ? await request.formData() : null;
+  const effectiveMethod =
+    typeof formData?.get("_method") === "string"
+      ? formData.get("_method")!.toString().toUpperCase()
+      : method;
 
-  if (method !== "DELETE" && method !== "PATCH") {
+  if (effectiveMethod !== "DELETE" && effectiveMethod !== "PATCH") {
     return new Response("Method Not Allowed", { status: 405 });
   }
 
@@ -34,7 +39,7 @@ export async function action({ request, context, params }: ActionFunctionArgs) {
     return Response.json({ error: "App not found" }, { status: 404 });
   }
 
-  if (method === "DELETE") {
+  if (effectiveMethod === "DELETE") {
     await db
       .delete(developerApps)
       .where(and(eq(developerApps.id, appId), eq(developerApps.userId, auth.user.id)));
