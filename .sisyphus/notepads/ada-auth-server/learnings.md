@@ -89,3 +89,66 @@ All required bindings present in `apps/auth/app/types/env.ts`:
 ### Pre-existing Issues
 - Typecheck fails due to test config issues (`cloudflare:test` module, vitest wrangler config)
 - These are unrelated to layout changes - my files have zero LSP errors
+
+## Task 4: Vitest + Miniflare Test Infrastructure
+
+### Key Learnings
+
+1. **Vitest Version Compatibility**: @cloudflare/vitest-pool-workers@0.13.0 requires vitest@^4.1.0, not 3.x. The pool won't work with older versions.
+
+2. **Pool Configuration in Vitest 4**: The config format changed from `poolOptions` to direct top-level options. Use:
+   ```typescript
+   import { cloudflarePool } from "@cloudflare/vitest-pool-workers";
+   export default defineConfig({
+     test: {
+       pool: cloudflarePool({ ... })
+     }
+   });
+   ```
+
+3. **Virtual Module Resolution**: The `cloudflare:test` module is a virtual module provided by the pool at runtime. It's not a real npm package. Type definitions are in `@cloudflare/vitest-pool-workers/types/cloudflare-test.d.ts`.
+
+4. **TypeScript Configuration**: Add `@cloudflare/vitest-pool-workers/types` to tsconfig.json `types` array to get proper type hints for `cloudflare:test` imports.
+
+5. **Miniflare Bindings**: The pool automatically creates miniflare instances with D1, KV, and R2 bindings configured in vitest.config.ts. These are available via `env` from `cloudflare:test`.
+
+6. **Test File Organization**: 
+   - Worker tests go in `apps/auth/app/__tests__/`
+   - SDK tests go in `packages/auth-sdk/__tests__/`
+   - Both use standard vitest patterns
+
+7. **Setup Helpers**: Created `setup.ts` with KV and email mocking utilities. Full DB helpers will work after T2 creates the schema.
+
+8. **Workspace Configuration**: Root `vitest.workspace.ts` aggregates tests from both packages, allowing `pnpm test` to run all tests in sequence.
+
+### Gotchas
+
+- The pool requires a specific vitest version (4.1.0+)
+- `cloudflare:test` module must be imported, not `cloudflare:workers` for test utilities
+- Miniflare doesn't support KV wildcard queries in test environment
+- The pool adds Node.js compatibility flags automatically (TTY, FS, HTTP modules)
+
+### Files Created
+
+- `apps/auth/vitest.config.ts` - Miniflare pool config with D1, KV, R2 bindings
+- `apps/auth/app/__tests__/setup.ts` - Test helpers (KV, email mocking)
+- `apps/auth/app/__tests__/health.test.ts` - Basic health check test
+- `packages/auth-sdk/vitest.config.ts` - Node environment config
+- `packages/auth-sdk/__tests__/basic.test.ts` - Placeholder SDK test
+- `vitest.workspace.ts` - Workspace aggregator
+- Updated `apps/auth/tsconfig.json` - Added vitest-pool-workers types
+- Updated `apps/auth/package.json` - Upgraded vitest to 4.1.0
+
+### Test Results
+
+All tests pass with exit code 0:
+- apps/auth: 1 test passed
+- packages/auth-sdk: 1 test passed
+
+## Task 7: Session CRUD + Sliding Window + Cookie Helpers
+
+- Implemented server-side KV session helpers with opaque UUID tokens and 7-day TTL.
+- Sliding window is enforced on reads: when elapsed time exceeds 50% of TTL, session `expiresAt` and KV TTL are both refreshed.
+- Added user-session index helpers (`registerSessionInUserIndex`, `deleteAllUserSessions`) for mass invalidation scenarios.
+- Added cookie helpers with secure defaults: `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`, plus optional `Domain` via `COOKIE_DOMAIN`.
+- Vitest path alias resolution needed `vite-tsconfig-paths` in `apps/auth/vitest.config.ts` for `~/*` imports during test runs.

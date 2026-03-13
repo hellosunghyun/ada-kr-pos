@@ -1,0 +1,7 @@
+=== Session Test Results ===
+✓ app/__tests__/session.test.ts (14 tests)
+✓ app/__tests__/apple.test.ts (6 tests)
+✓ app/__tests__/health.test.ts (1 test)
+Test Files: 3 passed
+Tests: 20 passed
+Command: pnpm --filter auth test

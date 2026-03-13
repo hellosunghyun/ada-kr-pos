@@ -1,7 +1,9 @@
 import { defineConfig } from "vitest/config";
 import { cloudflarePool } from "@cloudflare/vitest-pool-workers";
+import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
+  plugins: [tsconfigPaths()],
   test: {
     pool: cloudflarePool({
       wrangler: { configPath: "./wrangler.toml" },
