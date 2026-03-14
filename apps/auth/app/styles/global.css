@@ -578,6 +578,8 @@ textarea.form-input {
 }
 
 .magic-link-form label {
+  display: block;
+  text-align: center;
   font-size: var(--text-sm);
   font-weight: 500;
   letter-spacing: -0.016em;
