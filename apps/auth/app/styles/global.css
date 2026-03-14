@@ -225,6 +225,8 @@ body {
   letter-spacing: -0.016em;
   transition: opacity var(--transition-fast);
   padding: 0;
+  vertical-align: baseline;
+  line-height: inherit;
 }
 
 .nav-link-logout:hover {
