@@ -5,32 +5,32 @@ pages_build_output_dir = "./build/client"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "ada-auth-db"
-database_id = "placeholder-replace-with-real-id"
+database_name = "ada-kr-pos-auth-db"
+database_id = "ae854b1c-9b57-4cf6-a9cb-3a143d82cbc8"
 
 [[kv_namespaces]]
 binding = "SESSIONS"
-id = "placeholder-sessions-id"
+id = "564f2c050525484aaaeea13a35e843d3"
 
 [[kv_namespaces]]
 binding = "EMAIL_TOKENS"
-id = "placeholder-email-tokens-id"
+id = "c1361361b32c49cdb3da25c0ab795651"
 
 [[kv_namespaces]]
 binding = "MAGIC_TOKENS"
-id = "placeholder-magic-tokens-id"
+id = "46425e33810d476891fec4307f02060c"
 
 [[kv_namespaces]]
 binding = "RATE_LIMITS"
-id = "placeholder-rate-limits-id"
+id = "903ba363b0ca4203ac6758a443c8da09"
 
 [[r2_buckets]]
 binding = "PROFILE_PHOTOS"
 bucket_name = "ada-auth-profile-photos"
 
 [vars]
-COOKIE_DOMAIN = ".adapos.tech"
-AUTH_URL = "https://adapos.tech"
+COOKIE_DOMAIN = ".ada-kr-pos.com"
+AUTH_URL = "https://ada-kr-pos.com"
 
 [dev]
 port = 5173
