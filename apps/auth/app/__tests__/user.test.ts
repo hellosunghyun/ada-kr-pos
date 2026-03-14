@@ -227,27 +227,27 @@ describe("User CRUD", () => {
         Origin: "https://example.com",
         Cookie: `session=${sessionId}`,
       },
-      body: JSON.stringify({
-        nickname: "patched",
-        bio: "Patched bio",
-        contact: "patched@example.com",
-        snsLinks: {
-          website: "https://adapos.tech",
-        },
-      }),
-    });
+       body: JSON.stringify({
+         nickname: "patched",
+         bio: "Patched bio",
+         contact: "patched@example.com",
+         snsLinks: {
+           website: "https://ada-kr-pos.com",
+         },
+       }),
+     });
 
-    const response = await meAction({ request, context, params: {} } as any);
-    const body = (await response.json()) as {
-      user: { nickname: string | null; bio: string | null; contact: string | null; snsLinks: Record<string, string> };
-    };
+     const response = await meAction({ request, context, params: {} } as any);
+     const body = (await response.json()) as {
+       user: { nickname: string | null; bio: string | null; contact: string | null; snsLinks: Record<string, string> };
+     };
 
-    expect(response.status).toBe(200);
-    expect(body.user.nickname).toBe("patched");
-    expect(body.user.bio).toBe("Patched bio");
-    expect(body.user.contact).toBe("patched@example.com");
-    expect(body.user.snsLinks).toEqual({
-      website: "https://adapos.tech",
-    });
+     expect(response.status).toBe(200);
+     expect(body.user.nickname).toBe("patched");
+     expect(body.user.bio).toBe("Patched bio");
+     expect(body.user.contact).toBe("patched@example.com");
+      expect(body.user.snsLinks).toEqual({
+        website: "https://ada-kr-pos.com",
+      });
   });
 });

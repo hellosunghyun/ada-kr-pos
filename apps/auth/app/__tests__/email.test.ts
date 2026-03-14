@@ -202,7 +202,7 @@ describe("Email verification", () => {
     });
     expect(lastEmail).not.toBeNull();
     expect(lastEmail?.to).toBe("member@pos.idserve.net");
-    expect(lastEmail?.from).toBe("noreply@adapos.tech");
+     expect(lastEmail?.from).toBe("noreply@ada-kr-pos.com");
     expect(lastEmail?.subject).toBe("ADA Auth — 이메일 인증");
     expect(lastEmail?.html).toContain("/api/verify/confirm?token=");
     expect(lastEmail?.html).toContain("email=member%40pos.idserve.net");

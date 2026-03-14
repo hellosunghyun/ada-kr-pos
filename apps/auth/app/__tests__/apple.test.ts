@@ -130,13 +130,13 @@ describe("Apple Sign-In", () => {
     expect(info.email).toBeNull();
   });
 
-  it("builds Apple OAuth URL with form_post mode", () => {
-    const url = buildAppleAuthUrl(
-      "tech.adapos.auth.service",
-      "https://adapos.tech/api/auth/apple/callback",
-      "test-state-123",
-      "test-nonce-456"
-    );
+   it("builds Apple OAuth URL with form_post mode", () => {
+     const url = buildAppleAuthUrl(
+       "tech.adapos.auth.service",
+       "https://ada-kr-pos.com/api/auth/apple/callback",
+       "test-state-123",
+       "test-nonce-456"
+     );
 
     expect(url).toContain("https://appleid.apple.com/auth/authorize");
     expect(url).toContain("client_id=tech.adapos.auth.service");

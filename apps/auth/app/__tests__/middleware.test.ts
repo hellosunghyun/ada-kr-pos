@@ -50,7 +50,7 @@ function makeContext(kv: KVNamespace, d1: D1Database): AppLoadContext {
         APPLE_PRIVATE_KEY: "test-private-key",
         RESEND_API_KEY: "test-resend-key",
         AUTH_SECRET: "test-auth-secret",
-        COOKIE_DOMAIN: ".adapos.tech",
+         COOKIE_DOMAIN: ".ada-kr-pos.com",
       },
       ctx: {} as ExecutionContext,
     },

@@ -72,19 +72,19 @@ describe("SSO integration", () => {
     context = makeContext();
   });
 
-  it("adapts cookie domain based on environment value", () => {
-    const expiresAt = Date.now() + 60 * 60 * 1000;
+   it("adapts cookie domain based on environment value", () => {
+     const expiresAt = Date.now() + 60 * 60 * 1000;
 
-    const prodCookie = setSessionCookie("session-prod", expiresAt, ".adapos.tech");
-    const localCookie = setSessionCookie("session-local", expiresAt, "");
+     const prodCookie = setSessionCookie("session-prod", expiresAt, ".ada-kr-pos.com");
+     const localCookie = setSessionCookie("session-local", expiresAt, "");
 
-    expect(prodCookie).toContain("Domain=.adapos.tech");
-    expect(localCookie).not.toContain("Domain=");
-  });
+     expect(prodCookie).toContain("Domain=.ada-kr-pos.com");
+     expect(localCookie).not.toContain("Domain=");
+   });
 
-  it("sets SSO-safe cookie attributes", () => {
-    const expiresAt = Date.now() + 60 * 60 * 1000;
-    const cookie = setSessionCookie("session-attrs", expiresAt, ".adapos.tech");
+   it("sets SSO-safe cookie attributes", () => {
+     const expiresAt = Date.now() + 60 * 60 * 1000;
+     const cookie = setSessionCookie("session-attrs", expiresAt, ".ada-kr-pos.com");
 
     expect(cookie).toContain("HttpOnly");
     expect(cookie).toContain("Secure");

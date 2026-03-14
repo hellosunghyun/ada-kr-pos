@@ -120,44 +120,44 @@ describe("Session Management", () => {
 });
 
 describe("Cookie Management", () => {
-  describe("setSessionCookie", () => {
-    it("sets cookie with Domain=.adapos.tech in production", () => {
-      const future = Date.now() + 7 * 24 * 60 * 60 * 1000;
-      const cookie = setSessionCookie("sess-123", future, ".adapos.tech");
+   describe("setSessionCookie", () => {
+     it("sets cookie with Domain=.ada-kr-pos.com in production", () => {
+       const future = Date.now() + 7 * 24 * 60 * 60 * 1000;
+       const cookie = setSessionCookie("sess-123", future, ".ada-kr-pos.com");
 
-      expect(cookie).toContain("session=sess-123");
-      expect(cookie).toContain("Domain=.adapos.tech");
-      expect(cookie).toContain("HttpOnly");
-      expect(cookie).toContain("Secure");
-      expect(cookie).toContain("SameSite=Lax");
-      expect(cookie).toContain("Path=/");
-      expect(cookie).not.toContain("SameSite=Strict");
-    });
+       expect(cookie).toContain("session=sess-123");
+       expect(cookie).toContain("Domain=.ada-kr-pos.com");
+       expect(cookie).toContain("HttpOnly");
+       expect(cookie).toContain("Secure");
+       expect(cookie).toContain("SameSite=Lax");
+       expect(cookie).toContain("Path=/");
+       expect(cookie).not.toContain("SameSite=Strict");
+     });
 
-    it("sets cookie WITHOUT Domain in local dev (empty COOKIE_DOMAIN)", () => {
-      const future = Date.now() + 7 * 24 * 60 * 60 * 1000;
-      const cookie = setSessionCookie("sess-456", future, "");
+     it("sets cookie WITHOUT Domain in local dev (empty COOKIE_DOMAIN)", () => {
+       const future = Date.now() + 7 * 24 * 60 * 60 * 1000;
+       const cookie = setSessionCookie("sess-456", future, "");
 
-      expect(cookie).toContain("session=sess-456");
-      expect(cookie).not.toContain("Domain=");
-      expect(cookie).toContain("HttpOnly");
-    });
+       expect(cookie).toContain("session=sess-456");
+       expect(cookie).not.toContain("Domain=");
+       expect(cookie).toContain("HttpOnly");
+     });
 
-    it("does NOT include SameSite=Strict", () => {
-      const future = Date.now() + 7 * 24 * 60 * 60 * 1000;
-      const cookie = setSessionCookie("sess-789", future, ".adapos.tech");
-      expect(cookie).not.toContain("SameSite=Strict");
-    });
-  });
+     it("does NOT include SameSite=Strict", () => {
+       const future = Date.now() + 7 * 24 * 60 * 60 * 1000;
+       const cookie = setSessionCookie("sess-789", future, ".ada-kr-pos.com");
+       expect(cookie).not.toContain("SameSite=Strict");
+     });
+   });
 
-  describe("clearSessionCookie", () => {
-    it("builds Max-Age=0 cookie to clear session", () => {
-      const cookie = clearSessionCookie(".adapos.tech");
-      expect(cookie).toContain("session=;");
-      expect(cookie).toContain("Max-Age=0");
-      expect(cookie).toContain("Domain=.adapos.tech");
-    });
-  });
+   describe("clearSessionCookie", () => {
+     it("builds Max-Age=0 cookie to clear session", () => {
+       const cookie = clearSessionCookie(".ada-kr-pos.com");
+       expect(cookie).toContain("session=;");
+       expect(cookie).toContain("Max-Age=0");
+       expect(cookie).toContain("Domain=.ada-kr-pos.com");
+     });
+   });
 
   describe("getSessionIdFromCookie", () => {
     it("extracts session ID from Cookie header", () => {
