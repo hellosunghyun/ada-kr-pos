@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { createDb } from "~/db/index";
+import type { createDb } from "~/db/index";
 import { users } from "~/db/schema";
 import { createSession } from "~/lib/session.server";
 import { getUserByEmail, getUserByVerifiedEmail } from "~/lib/user.server";
@@ -25,7 +25,8 @@ function isAllowedMagicEmail(email: string): boolean {
 export async function sendMagicLink(
   resendApiKey: string,
   kv: KVNamespace,
-  email: string
+  email: string,
+  callbackUrl?: string,
 ): Promise<void> {
   const normalizedEmail = normalizeEmail(email);
 
@@ -41,21 +42,22 @@ export async function sendMagicLink(
     JSON.stringify({
       email: normalizedEmail,
       createdAt: Date.now(),
+      callbackUrl: callbackUrl || undefined,
     }),
     {
       expirationTtl: MAGIC_TOKEN_TTL_SECONDS,
-    }
+    },
   );
 
-   const verifyUrl = `https://ada-kr-pos.com/api/auth/magic/verify?token=${token}`;
-   const response = await fetch("https://api.resend.com/emails", {
-     method: "POST",
-     headers: {
-       Authorization: `Bearer ${resendApiKey}`,
-       "Content-Type": "application/json",
-     },
-     body: JSON.stringify({
-       from: "noreply@ada-kr-pos.com",
+  const verifyUrl = `https://ada-kr-pos.com/api/auth/magic/verify?token=${token}`;
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: "noreply@ada-kr-pos.com",
       to: normalizedEmail,
       subject: "ADA Auth — 매직 링크 로그인",
       html: `<p>로그인 링크: <a href="${verifyUrl}">로그인하기</a></p>`,
@@ -71,8 +73,13 @@ export async function verifyMagicLink(
   kv: KVNamespace,
   db: Db,
   token: string,
-  sessionKv: KVNamespace = kv
-): Promise<{ userId: string; sessionId: string; expiresAt: number }> {
+  sessionKv: KVNamespace = kv,
+): Promise<{
+  userId: string;
+  sessionId: string;
+  expiresAt: number;
+  callbackUrl?: string;
+}> {
   const key = getMagicTokenKey(token);
   const raw = await kv.get(key);
 
@@ -80,8 +87,15 @@ export async function verifyMagicLink(
     throw new Error("Invalid or expired magic link token");
   }
 
-  const parsed = JSON.parse(raw) as { email?: unknown; createdAt?: unknown };
-  const email = typeof parsed.email === "string" ? normalizeEmail(parsed.email) : "";
+  const parsed = JSON.parse(raw) as {
+    email?: unknown;
+    createdAt?: unknown;
+    callbackUrl?: unknown;
+  };
+  const email =
+    typeof parsed.email === "string" ? normalizeEmail(parsed.email) : "";
+  const storedCallbackUrl =
+    typeof parsed.callbackUrl === "string" ? parsed.callbackUrl : undefined;
 
   await kv.delete(key);
 
@@ -90,7 +104,8 @@ export async function verifyMagicLink(
   }
 
   const existingUser =
-    (await getUserByVerifiedEmail(db, email)) ?? (await getUserByEmail(db, email));
+    (await getUserByVerifiedEmail(db, email)) ??
+    (await getUserByEmail(db, email));
   const userId = existingUser?.id ?? `magic_${crypto.randomUUID()}`;
 
   if (!existingUser) {
@@ -112,5 +127,5 @@ export async function verifyMagicLink(
 
   const { sessionId, expiresAt } = await createSession(sessionKv, userId);
 
-  return { userId, sessionId, expiresAt };
+  return { userId, sessionId, expiresAt, callbackUrl: storedCallbackUrl };
 }

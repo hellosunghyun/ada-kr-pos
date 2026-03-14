@@ -1,6 +1,7 @@
-import { Form, useActionData } from "react-router";
-import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
+import { Form, useActionData, useLoaderData } from "react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { redirect } from "react-router";
+import { getValidatedRedirect } from "~/lib/callback.server";
 import { optionalAuth } from "~/middleware/auth.server";
 
 interface ActionData {
@@ -9,16 +10,26 @@ interface ActionData {
 }
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
+  const url = new URL(request.url);
+  const callbackUrl = url.searchParams.get("callbackUrl");
+  const redirectTo = getValidatedRedirect(callbackUrl);
+
   const auth = await optionalAuth(request, context);
   if (auth.isAuthenticated) {
-    throw redirect("/mypage");
+    throw redirect(redirectTo);
   }
-  return {};
+
+  return {
+    callbackUrl: callbackUrl && redirectTo !== "/mypage" ? callbackUrl : null,
+  };
 }
 
-export async function action({ request }: ActionFunctionArgs): Promise<ActionData> {
+export async function action({
+  request,
+}: ActionFunctionArgs): Promise<ActionData> {
   const formData = await request.formData();
   const email = formData.get("email") as string;
+  const callbackUrl = formData.get("callbackUrl") as string | null;
 
   if (!email) {
     return { error: "이메일을 입력해주세요." };
@@ -34,19 +45,28 @@ export async function action({ request }: ActionFunctionArgs): Promise<ActionDat
       "Content-Type": "application/json",
       Origin: request.headers.get("Origin") || new URL(request.url).origin,
     },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email, callbackUrl }),
   });
 
   if (response.ok) {
     return { success: true };
   }
 
-  const data = await response.json().catch(() => ({ error: "알 수 없는 오류가 발생했습니다." }));
-  return { error: (data as { error?: string }).error || "이메일 전송에 실패했습니다." };
+  const data = await response
+    .json()
+    .catch(() => ({ error: "알 수 없는 오류가 발생했습니다." }));
+  return {
+    error: (data as { error?: string }).error || "이메일 전송에 실패했습니다.",
+  };
 }
 
 export default function Login() {
+  const { callbackUrl } = useLoaderData<typeof loader>();
   const actionData = useActionData<ActionData>();
+
+  const appleAuthUrl = callbackUrl
+    ? `/api/auth/apple?callbackUrl=${encodeURIComponent(callbackUrl)}`
+    : "/api/auth/apple";
 
   return (
     <div className="login-container">
@@ -54,8 +74,15 @@ export default function Login() {
         <h1>PORTAL</h1>
         <p>Apple Developer Academy @ POSTECH</p>
 
-        <a href="/api/auth/apple" className="apple-signin-btn">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" width="14" height="18" fill="currentColor" aria-hidden="true">
+        <a href={appleAuthUrl} className="apple-signin-btn">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 384 512"
+            width="14"
+            height="18"
+            fill="currentColor"
+            aria-hidden="true"
+          >
             <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5c0 26.2 4.8 53.3 14.4 81.2 12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" />
           </svg>
           Sign in with Apple
@@ -66,6 +93,9 @@ export default function Login() {
         </div>
 
         <Form method="post" className="magic-link-form">
+          {callbackUrl && (
+            <input type="hidden" name="callbackUrl" value={callbackUrl} />
+          )}
           <label htmlFor="email">@pos.idserve.net 이메일로 로그인</label>
           <input
             type="email"
@@ -82,9 +112,7 @@ export default function Login() {
         {actionData?.success && (
           <p className="success-msg">이메일을 확인해주세요!</p>
         )}
-        {actionData?.error && (
-          <p className="error-msg">{actionData.error}</p>
-        )}
+        {actionData?.error && <p className="error-msg">{actionData.error}</p>}
       </div>
     </div>
   );

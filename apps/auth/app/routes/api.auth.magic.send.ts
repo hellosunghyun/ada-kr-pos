@@ -10,8 +10,14 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
   await validateCsrf(request);
 
-  const body = (await request.json()) as { email?: unknown };
-  const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+  const body = (await request.json()) as {
+    email?: unknown;
+    callbackUrl?: unknown;
+  };
+  const email =
+    typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+  const callbackUrl =
+    typeof body.callbackUrl === "string" ? body.callbackUrl : undefined;
 
   if (!email) {
     return Response.json({ error: "Email required" }, { status: 400 });
@@ -20,7 +26,12 @@ export async function action({ request, context }: ActionFunctionArgs) {
   const env = (context as any).cloudflare.env as Env;
 
   try {
-    await sendMagicLink(env.RESEND_API_KEY, env.MAGIC_TOKENS, email);
+    await sendMagicLink(
+      env.RESEND_API_KEY,
+      env.MAGIC_TOKENS,
+      email,
+      callbackUrl,
+    );
   } catch (error) {
     if (
       error instanceof Error &&
