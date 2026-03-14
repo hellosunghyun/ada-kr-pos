@@ -51,7 +51,7 @@ export default function Login() {
   return (
     <div className="login-container">
       <div className="login-card">
-        <h1>ADA Auth</h1>
+        <h1>PORTAL</h1>
         <p>Apple Developer Academy @ POSTECH</p>
         <p className="unofficial-notice">구성원이 만든 비공식 서비스입니다</p>
 

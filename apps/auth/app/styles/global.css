@@ -481,7 +481,7 @@ textarea.form-input {
    Login Page - iCloud Style
    ============================================ */
 .login-container {
-  min-height: calc(100vh - 48px);
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;

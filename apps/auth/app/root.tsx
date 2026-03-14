@@ -50,7 +50,7 @@ export default function App() {
       <header className="site-header">
         <div className="header-inner">
           <NavLink to="/" className="site-logo">
-            ADA Auth
+            PORTAL
           </NavLink>
           <nav className="site-nav" aria-label="Main navigation">
             {isAuthenticated ? (
@@ -98,7 +98,7 @@ export default function App() {
         <Outlet />
       </main>
       <footer className="site-footer">
-        <p>본 서비스는 구성원이 만든 비공식 서비스이며, Apple Developer Academy @ POSTECH와 공식적인 관련이 없습니다.</p>
+        <p>© Apple Developer Academy @ POSTECH</p>
       </footer>
     </div>
   );
@@ -114,7 +114,7 @@ export function ErrorBoundary() {
           <header className="site-header">
             <div className="header-inner">
               <NavLink to="/" className="site-logo">
-                ADA Auth
+                PORTAL
               </NavLink>
             </div>
           </header>
@@ -128,7 +128,7 @@ export function ErrorBoundary() {
             </div>
           </main>
           <footer className="site-footer">
-            <p>본 서비스는 구성원이 만든 비공식 서비스이며, Apple Developer Academy @ POSTECH와 공식적인 관련이 없습니다.</p>
+            <p>© Apple Developer Academy @ POSTECH</p>
           </footer>
         </div>
       );
@@ -139,7 +139,7 @@ export function ErrorBoundary() {
         <header className="site-header">
           <div className="header-inner">
             <NavLink to="/" className="site-logo">
-              ADA Auth
+              PORTAL
             </NavLink>
           </div>
         </header>
@@ -153,7 +153,7 @@ export function ErrorBoundary() {
           </div>
         </main>
         <footer className="site-footer">
-          <p>본 서비스는 구성원이 만든 비공식 서비스이며, Apple Developer Academy @ POSTECH와 공식적인 관련이 없습니다.</p>
+          <p>© Apple Developer Academy @ POSTECH</p>
         </footer>
       </div>
     );
@@ -164,7 +164,7 @@ export function ErrorBoundary() {
       <header className="site-header">
         <div className="header-inner">
           <NavLink to="/" className="site-logo">
-            ADA Auth
+            PORTAL
           </NavLink>
         </div>
       </header>
@@ -178,7 +178,7 @@ export function ErrorBoundary() {
         </div>
       </main>
       <footer className="site-footer">
-        <p>본 서비스는 구성원이 만든 비공식 서비스이며, Apple Developer Academy @ POSTECH와 공식적인 관련이 없습니다.</p>
+        <p>© Apple Developer Academy @ POSTECH</p>
       </footer>
     </div>
   );
