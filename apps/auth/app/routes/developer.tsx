@@ -329,7 +329,7 @@ interface AdakrposUser {
   bio: string | null;
   contact: string | null;
   snsLinks: Record<string, string>;
-  cohort: string | null;        // e.g. "2026"
+  cohort: string | null;        // e.g. "cohort-2026"
   isVerified: boolean;          // pos.idserve.net 인증 여부
   createdAt: number;            // Unix 타임스탬프 (ms)
   updatedAt: number;            // Unix 타임스탬프 (ms)
@@ -596,7 +596,7 @@ export default {
   bio: string | null;
   contact: string | null;
   snsLinks: Record<string, string>;
-  cohort: string | null;        // e.g. "2026"
+  cohort: string | null;        // e.g. "cohort-2026"
   isVerified: boolean;          // pos.idserve.net 인증 여부
   createdAt: number;            // Unix 타임스탬프 (ms)
   updatedAt: number;            // Unix 타임스탬프 (ms)
@@ -662,7 +662,7 @@ Authorization: Bearer ak_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
     "bio": "안녕하세요",
     "contact": "010-1234-5678",
     "snsLinks": { "github": "https://github.com/user" },
-    "cohort": "2026",
+    "cohort": "cohort-2026",
     "isVerified": true,
     "createdAt": 1710000000000,
     "updatedAt": 1710000000000
@@ -691,7 +691,7 @@ Authorization: Bearer ak_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`}</pre>
   "bio": "안녕하세요",
   "contact": "010-1234-5678",
   "snsLinks": { "github": "https://github.com/user" },
-  "cohort": "2026",
+  "cohort": "cohort-2026",
   "isVerified": true,
   "createdAt": 1710000000000,
   "updatedAt": 1710000000000

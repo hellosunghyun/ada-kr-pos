@@ -220,7 +220,7 @@ export default function MyPage() {
           <div className="profile-badges">
             <span className="verified-badge">✓ 구성원 인증 완료</span>
             {displayUser.cohort && (
-              <span className="cohort-badge">Cohort {displayUser.cohort}</span>
+              <span className="cohort-badge">{displayUser.cohort.startsWith("cohort-") ? `Cohort ${displayUser.cohort.slice(7)}` : displayUser.cohort}</span>
             )}
             {isAppleLinked ? (
               <div className="apple-linked-badge">
@@ -288,7 +288,7 @@ export default function MyPage() {
           />
         </div>
         <div className="form-group">
-          <label htmlFor="cohort">기수 (Cohort)</label>
+          <label htmlFor="cohort">구분</label>
           <select
             id="cohort"
             name="cohort"
@@ -300,7 +300,7 @@ export default function MyPage() {
               { length: new Date().getFullYear() - 2025 },
               (_, i) => 2026 + i
             ).map((year) => (
-              <option key={year} value={String(year)}>
+              <option key={year} value={`cohort-${year}`}>
                 Cohort {year}
               </option>
             ))}
