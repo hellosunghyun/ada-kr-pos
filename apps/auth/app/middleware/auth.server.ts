@@ -43,6 +43,7 @@ async function getUserById(
       bio: user.bio ?? null,
       contact: user.contact ?? null,
       snsLinks,
+      cohort: user.cohort ?? null,
       isVerified: user.isVerified,
       createdAt: user.createdAt.getTime(),
       updatedAt: user.updatedAt.getTime(),
