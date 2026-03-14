@@ -1,4 +1,4 @@
-const COOKIE_NAME = "session";
+const COOKIE_NAME = "adakrpos_session";
 
 export function setSessionCookie(
   sessionId: string,

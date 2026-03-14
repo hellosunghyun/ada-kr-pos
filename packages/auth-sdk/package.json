@@ -1,6 +1,6 @@
 {
-  "name": "@adapos/auth",
-  "version": "0.0.1",
+  "name": "@adakrpos/auth",
+  "version": "0.0.2",
   "type": "commonjs",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

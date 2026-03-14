@@ -20,7 +20,7 @@ importers:
 
   apps/auth:
     dependencies:
-      '@adapos/auth':
+      '@adakrpos/auth':
         specifier: workspace:*
         version: link:../../packages/auth-sdk
       '@react-router/cloudflare':

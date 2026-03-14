@@ -26,6 +26,7 @@ const USERS_TABLE_SQL = `
     bio text,
     contact text,
     sns_links text DEFAULT '{}',
+    cohort text,
     is_verified integer DEFAULT false NOT NULL,
     created_at integer NOT NULL,
     updated_at integer NOT NULL
@@ -143,7 +144,7 @@ describe("Developer Apps API", () => {
 
       const request = new Request("https://example.com/api/developer/apps", {
         method: "GET",
-        headers: { Cookie: `session=${sessionId}` },
+        headers: { Cookie: `adakrpos_session=${sessionId}` },
       });
 
       const response = await appsLoader({ request, context, params: {} } as any);
@@ -166,7 +167,7 @@ describe("Developer Apps API", () => {
 
       const request = new Request("https://example.com/api/developer/apps", {
         method: "GET",
-        headers: { Cookie: `session=${sessionId}` },
+        headers: { Cookie: `adakrpos_session=${sessionId}` },
       });
 
       const response = await appsLoader({ request, context, params: {} } as any);
@@ -194,7 +195,7 @@ describe("Developer Apps API", () => {
         headers: {
           "Content-Type": "application/json",
           Origin: "https://example.com",
-          Cookie: `session=${sessionId}`,
+          Cookie: `adakrpos_session=${sessionId}`,
         },
         body: JSON.stringify({ name: "Test App", description: "A test app" }),
       });
@@ -228,7 +229,7 @@ describe("Developer Apps API", () => {
         headers: {
           "Content-Type": "application/json",
           Origin: "https://example.com",
-          Cookie: `session=${sessionId}`,
+          Cookie: `adakrpos_session=${sessionId}`,
         },
         body: JSON.stringify({ description: "No name" }),
       });
@@ -256,7 +257,7 @@ describe("Developer Apps API", () => {
         headers: {
           "Content-Type": "application/json",
           Origin: "https://example.com",
-          Cookie: `session=${sessionId}`,
+          Cookie: `adakrpos_session=${sessionId}`,
         },
         body: JSON.stringify({ name: "Another App" }),
       });
@@ -273,7 +274,7 @@ describe("Developer Apps API", () => {
 
       const getRequest = new Request("https://example.com/api/developer/apps", {
         method: "GET",
-        headers: { Cookie: `session=${sessionId}` },
+        headers: { Cookie: `adakrpos_session=${sessionId}` },
       });
 
       const getResponse = await appsLoader({
@@ -308,7 +309,7 @@ describe("Developer Apps API", () => {
         headers: {
           "Content-Type": "application/json",
           Origin: "https://example.com",
-          Cookie: `session=${sessionId}`,
+          Cookie: `adakrpos_session=${sessionId}`,
         },
         body: JSON.stringify({ name: "App to Delete" }),
       });
@@ -327,7 +328,7 @@ describe("Developer Apps API", () => {
           method: "DELETE",
           headers: {
             Origin: "https://example.com",
-            Cookie: `session=${sessionId}`,
+            Cookie: `adakrpos_session=${sessionId}`,
           },
         }
       );
@@ -337,14 +338,12 @@ describe("Developer Apps API", () => {
         context,
         params: { id: appId },
       } as any);
-      expect(deleteResponse.status).toBe(200);
-
-      const deleteBody = (await deleteResponse.json()) as { success: boolean };
-      expect(deleteBody.success).toBe(true);
+      expect(deleteResponse.status).toBe(302);
+      expect(deleteResponse.headers.get("Location")).toBe("/developer");
 
       const getRequest = new Request("https://example.com/api/developer/apps", {
         method: "GET",
-        headers: { Cookie: `session=${sessionId}` },
+        headers: { Cookie: `adakrpos_session=${sessionId}` },
       });
 
       const getResponse = await appsLoader({
@@ -388,7 +387,7 @@ describe("Developer Apps API", () => {
         headers: {
           "Content-Type": "application/json",
           Origin: "https://example.com",
-          Cookie: `session=${ownerSession}`,
+          Cookie: `adakrpos_session=${ownerSession}`,
         },
         body: JSON.stringify({ name: "Owner's App" }),
       });
@@ -407,7 +406,7 @@ describe("Developer Apps API", () => {
           method: "DELETE",
           headers: {
             Origin: "https://example.com",
-            Cookie: `session=${otherSession}`,
+            Cookie: `adakrpos_session=${otherSession}`,
           },
         }
       );
@@ -438,7 +437,7 @@ describe("Developer Apps API", () => {
         headers: {
           "Content-Type": "application/json",
           Origin: "https://example.com",
-          Cookie: `session=${sessionId}`,
+          Cookie: `adakrpos_session=${sessionId}`,
         },
         body: JSON.stringify({ name: "Original Name" }),
       });
@@ -458,7 +457,7 @@ describe("Developer Apps API", () => {
           headers: {
             "Content-Type": "application/json",
             Origin: "https://example.com",
-            Cookie: `session=${sessionId}`,
+            Cookie: `adakrpos_session=${sessionId}`,
           },
           body: JSON.stringify({ name: "Updated Name", description: "New description" }),
         }

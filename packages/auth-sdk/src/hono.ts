@@ -1,9 +1,9 @@
 import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 
-import { createAdaposAuth } from "./client";
-import type { AdaposAuthClient, AdaposAuthConfig } from "./client";
-import type { AdaposAuthContext, AuthContext, AdaposUnauthContext } from "./types";
+import { createAdakrposAuth } from "./client";
+import type { AdakrposAuthClient, AdakrposAuthConfig } from "./client";
+import type { AdakrposAuthContext, AuthContext, AdakrposUnauthContext } from "./types";
 
 type AuthFn = () => Promise<AuthContext>;
 
@@ -13,14 +13,14 @@ declare module "hono" {
   }
 }
 
-const UNAUTH_CONTEXT: AdaposUnauthContext = {
+const UNAUTH_CONTEXT: AdakrposUnauthContext = {
   user: null,
   session: null,
   isAuthenticated: false,
 };
 
 function getSessionId(cookieHeader: string): string | null {
-  const sessionMatch = cookieHeader.match(/(?:^|;\s*)session=([^;]+)/);
+  const sessionMatch = cookieHeader.match(/(?:^|;\s*)adakrpos_session=([^;]+)/);
 
   if (!sessionMatch) {
     return null;
@@ -33,7 +33,7 @@ function getSessionId(cookieHeader: string): string | null {
   }
 }
 
-function createAuthFn(client: AdaposAuthClient, sessionId: string | null): AuthFn {
+function createAuthFn(client: AdakrposAuthClient, sessionId: string | null): AuthFn {
   let authPromise: Promise<AuthContext> | undefined;
 
   return async () => {
@@ -53,7 +53,7 @@ function createAuthFn(client: AdaposAuthClient, sessionId: string | null): AuthF
           user: result.user,
           session: result.session,
           isAuthenticated: true,
-        } satisfies AdaposAuthContext;
+        } satisfies AdakrposAuthContext;
       })();
     }
 
@@ -61,13 +61,13 @@ function createAuthFn(client: AdaposAuthClient, sessionId: string | null): AuthF
   };
 }
 
-function setAuthContext(c: Context, client: AdaposAuthClient): void {
+function setAuthContext(c: Context, client: AdakrposAuthClient): void {
   const cookieHeader = c.req.header("Cookie") ?? "";
   c.set("auth", createAuthFn(client, getSessionId(cookieHeader)));
 }
 
-export function adaposAuth(config: AdaposAuthConfig) {
-  const client = createAdaposAuth(config);
+export function adakrposAuth(config: AdakrposAuthConfig) {
+  const client = createAdakrposAuth(config);
 
   return createMiddleware(async (c, next) => {
     setAuthContext(c, client);
@@ -85,8 +85,8 @@ export async function getAuth(c: Context): Promise<AuthContext> {
   return authFn();
 }
 
-export function requireAuth(config: AdaposAuthConfig) {
-  const client = createAdaposAuth(config);
+export function requireAuth(config: AdakrposAuthConfig) {
+  const client = createAdakrposAuth(config);
 
   return createMiddleware(async (c, next) => {
     setAuthContext(c, client);

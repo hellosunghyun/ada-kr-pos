@@ -1,8 +1,10 @@
 import type { ActionFunctionArgs } from "react-router";
+import { redirect } from "react-router";
 import { createDb } from "~/db/index";
 import { developerApps } from "~/db/schema";
 import { requireAuthApi } from "~/middleware/auth.server";
 import { validateCsrf } from "~/middleware/csrf.server";
+import { generateApiKey, hashApiKey, getApiKeyPrefix } from "~/lib/apikey.server";
 import type { Env } from "~/types/env";
 import { eq, and } from "drizzle-orm";
 
@@ -14,7 +16,7 @@ export async function action({ request, context, params }: ActionFunctionArgs) {
       ? formData.get("_method")!.toString().toUpperCase()
       : method;
 
-  if (effectiveMethod !== "DELETE" && effectiveMethod !== "PATCH") {
+  if (effectiveMethod !== "DELETE" && effectiveMethod !== "PATCH" && effectiveMethod !== "REGENERATE") {
     return new Response("Method Not Allowed", { status: 405 });
   }
 
@@ -44,7 +46,29 @@ export async function action({ request, context, params }: ActionFunctionArgs) {
       .delete(developerApps)
       .where(and(eq(developerApps.id, appId), eq(developerApps.userId, auth.user.id)));
 
-    return Response.json({ success: true });
+    return redirect("/developer");
+  }
+
+  if (effectiveMethod === "REGENERATE") {
+    const apiKey = generateApiKey();
+    const apiKeyHash = await hashApiKey(apiKey);
+    const apiKeyPrefix = getApiKeyPrefix(apiKey);
+    const now = new Date();
+
+    await db
+      .update(developerApps)
+      .set({ apiKeyHash, apiKeyPrefix, updatedAt: now })
+      .where(eq(developerApps.id, appId));
+
+    return Response.json({
+      app: {
+        id: appId,
+        name: existing.name,
+        apiKeyPrefix,
+        apiKey,
+      },
+      success: true,
+    });
   }
 
   const body = (await request.json()) as {

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { clearApiKeyCache } from "../src/cache";
-import { adaposAuthExpress, requireAuthExpress } from "../src/express";
+import { adakrposAuthExpress, requireAuthExpress } from "../src/express";
 import { verifyRequest } from "../src/generic";
 
 const config = {
@@ -20,6 +20,7 @@ const validSession = {
     bio: null,
     contact: null,
     snsLinks: {},
+    cohort: null,
     isVerified: true,
     createdAt: 1,
     updatedAt: 2,
@@ -43,7 +44,7 @@ describe("Express middleware", () => {
   });
 
   it("attaches auth function to req", async () => {
-    const middleware = adaposAuthExpress(config);
+    const middleware = adakrposAuthExpress(config);
     const req = { headers: {} };
     const res = {};
     let nextCalled = false;
@@ -58,7 +59,7 @@ describe("Express middleware", () => {
 
   it("returns an unauthenticated context when no session cookie is present", async () => {
     const fetchSpy = vi.spyOn(global, "fetch");
-    const middleware = adaposAuthExpress(config);
+    const middleware = adakrposAuthExpress(config);
     const req = { headers: {} };
     const res = {};
 
@@ -78,8 +79,8 @@ describe("Express middleware", () => {
     const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
       new Response(JSON.stringify(validSession), { status: 200 }),
     );
-    const middleware = adaposAuthExpress(config);
-    const req = { headers: { cookie: "session=session_123" } };
+    const middleware = adakrposAuthExpress(config);
+    const req = { headers: { cookie: "adakrpos_session=session_123" } };
     const res = {};
 
     await middleware(req, res, () => {});
@@ -118,7 +119,7 @@ describe("Express middleware", () => {
       new Response(JSON.stringify(validSession), { status: 200 }),
     );
     const middleware = requireAuthExpress(config);
-    const req = { headers: { cookie: "session=session_123" } };
+    const req = { headers: { cookie: "adakrpos_session=session_123" } };
     const res = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn(),
@@ -138,8 +139,8 @@ describe("Express middleware", () => {
     const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
       new Response(JSON.stringify(validSession), { status: 200 }),
     );
-    const middleware = adaposAuthExpress(config);
-    const req = { headers: { cookie: "session=session_123" } };
+    const middleware = adakrposAuthExpress(config);
+    const req = { headers: { cookie: "adakrpos_session=session_123" } };
     const res = {};
 
     await middleware(req, res, () => {});
@@ -155,8 +156,8 @@ describe("Express middleware", () => {
     const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
       new Response(JSON.stringify(validSession), { status: 200 }),
     );
-    const middleware = adaposAuthExpress(config);
-    const req = { headers: { cookie: "session=session_123" } };
+    const middleware = adakrposAuthExpress(config);
+    const req = { headers: { cookie: "adakrpos_session=session_123" } };
     const res = {};
 
     await middleware(req, res, () => {});
@@ -200,7 +201,7 @@ describe("Generic verifyRequest helper", () => {
       new Response(JSON.stringify(validSession), { status: 200 }),
     );
     const request = new Request("http://localhost/", {
-      headers: { Cookie: "session=session_123" },
+      headers: { Cookie: "adakrpos_session=session_123" },
     });
 
     const authContext = await verifyRequest(request, config);
@@ -224,7 +225,7 @@ describe("Generic verifyRequest helper", () => {
     );
     const encodedSessionId = encodeURIComponent("session_with_special_chars=123");
     const request = new Request("http://localhost/", {
-      headers: { Cookie: `session=${encodedSessionId}` },
+      headers: { Cookie: `adakrpos_session=${encodedSessionId}` },
     });
 
     const authContext = await verifyRequest(request, config);

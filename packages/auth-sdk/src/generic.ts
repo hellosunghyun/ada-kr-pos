@@ -1,15 +1,15 @@
-import { createAdaposAuth } from "./client";
-import type { AdaposAuthConfig } from "./client";
-import type { AuthContext, AdaposAuthContext, AdaposUnauthContext } from "./types";
+import { createAdakrposAuth } from "./client";
+import type { AdakrposAuthConfig } from "./client";
+import type { AuthContext, AdakrposAuthContext, AdakrposUnauthContext } from "./types";
 
-const UNAUTH_CONTEXT: AdaposUnauthContext = {
+const UNAUTH_CONTEXT: AdakrposUnauthContext = {
   user: null,
   session: null,
   isAuthenticated: false,
 };
 
 function getSessionId(cookieHeader: string): string | null {
-  const sessionMatch = cookieHeader.match(/(?:^|;\s*)session=([^;]+)/);
+  const sessionMatch = cookieHeader.match(/(?:^|;\s*)adakrpos_session=([^;]+)/);
 
   if (!sessionMatch) {
     return null;
@@ -26,9 +26,9 @@ function getSessionId(cookieHeader: string): string | null {
 // Works with CF Workers, Deno, Bun, and any Web standard environment
 export async function verifyRequest(
   request: Request,
-  config: AdaposAuthConfig,
+  config: AdakrposAuthConfig,
 ): Promise<AuthContext> {
-  const client = createAdaposAuth(config);
+  const client = createAdakrposAuth(config);
 
   const cookieHeader = request.headers.get("Cookie") ?? "";
   const sessionId = getSessionId(cookieHeader);
@@ -46,5 +46,5 @@ export async function verifyRequest(
     user: result.user,
     session: result.session,
     isAuthenticated: true,
-  } satisfies AdaposAuthContext;
+  } satisfies AdakrposAuthContext;
 }

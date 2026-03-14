@@ -1,4 +1,4 @@
-export interface AdaposUser {
+export interface AdakrposUser {
   id: string;
   email: string | null;         // Apple email (apple_email column)
   verifiedEmail: string | null; // pos.idserve.net verified email
@@ -8,31 +8,32 @@ export interface AdaposUser {
   bio: string | null;
   contact: string | null;
   snsLinks: Record<string, string>;
+  cohort: string | null;        // e.g. "2026"
   isVerified: boolean;          // true if pos.idserve.net email verified
   createdAt: number;            // Unix timestamp (milliseconds)
   updatedAt: number;            // Unix timestamp (milliseconds)
 }
 
-export interface AdaposSession {
+export interface AdakrposSession {
   id: string;
   userId: string;
   expiresAt: number;  // Unix timestamp (milliseconds)
   createdAt: number;  // Unix timestamp (milliseconds)
 }
 
-export interface AdaposAuthContext {
-  user: AdaposUser;
-  session: AdaposSession;
+export interface AdakrposAuthContext {
+  user: AdakrposUser;
+  session: AdakrposSession;
   isAuthenticated: true;
 }
 
-export interface AdaposUnauthContext {
+export interface AdakrposUnauthContext {
   user: null;
   session: null;
   isAuthenticated: false;
 }
 
-export type AuthContext = AdaposAuthContext | AdaposUnauthContext;
+export type AuthContext = AdakrposAuthContext | AdakrposUnauthContext;
 
 export interface DeveloperApp {
   id: string;

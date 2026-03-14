@@ -25,6 +25,7 @@ const USERS_TABLE_SQL = `
     bio text,
     contact text,
     sns_links text DEFAULT '{}',
+    cohort text,
     is_verified integer DEFAULT false NOT NULL,
     created_at integer NOT NULL,
     updated_at integer NOT NULL
@@ -160,7 +161,7 @@ describe("Email verification", () => {
       headers: {
         "Content-Type": "application/json",
         Origin: "https://example.com",
-        Cookie: `session=${sessionId}`,
+        Cookie: `adakrpos_session=${sessionId}`,
       },
       body: JSON.stringify({ email: "member@example.com" }),
     });
@@ -186,7 +187,7 @@ describe("Email verification", () => {
       headers: {
         "Content-Type": "application/json",
         Origin: "https://example.com",
-        Cookie: `session=${sessionId}`,
+        Cookie: `adakrpos_session=${sessionId}`,
       },
       body: JSON.stringify({ email: "member@pos.idserve.net" }),
     });
@@ -227,7 +228,7 @@ describe("Email verification", () => {
       {
         method: "GET",
         headers: {
-          Cookie: `session=${sessionId}`,
+          Cookie: `adakrpos_session=${sessionId}`,
         },
       }
     );

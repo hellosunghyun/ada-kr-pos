@@ -26,6 +26,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
     bio?: string;
     contact?: string;
     snsLinks?: Record<string, string>;
+    cohort?: string | null;
   };
 
   const updated = await updateUserProfile(db, auth.user.id, body);

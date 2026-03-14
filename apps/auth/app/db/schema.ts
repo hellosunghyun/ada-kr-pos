@@ -11,6 +11,7 @@ export const users = sqliteTable("users", {
   bio: text("bio"),
   contact: text("contact"),
   snsLinks: text("sns_links").default("{}"), // JSON string
+  cohort: text("cohort"), // e.g. "2026"
   isVerified: integer("is_verified", { mode: "boolean" }).default(false).notNull(),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),

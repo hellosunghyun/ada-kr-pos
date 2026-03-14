@@ -22,7 +22,7 @@ App ID는 Apple 생태계에서 앱을 식별하는 기본 단위입니다.
 4. Type: **App** 선택 → Continue
 5. 다음 항목 입력:
    - **Description**: `ADA Auth` (임의)
-   - **Bundle ID**: `tech.adapos.auth` (Explicit 선택)
+   - **Bundle ID**: `tech.adakrpos.auth` (Explicit 선택)
 6. Capabilities 목록에서 **Sign In with Apple** 체크 ✅
 7. Continue → Register
 
@@ -38,7 +38,7 @@ Services ID가 웹 OAuth 흐름에서 `client_id`로 사용됩니다. 이것이 
 2. **Services IDs** 선택 → Continue
 3. 다음 항목 입력:
    - **Description**: `ADA Auth Web`
-   - **Identifier**: `tech.adapos.auth.service`
+   - **Identifier**: `tech.adakrpos.auth.service`
 4. Register 클릭 후, 방금 만든 Services ID를 목록에서 다시 클릭
 5. **Sign In with Apple** 체크 ✅ → **Configure** 클릭
 6. 설정 창에서:
@@ -47,7 +47,7 @@ Services ID가 웹 OAuth 흐름에서 `client_id`로 사용됩니다. 이것이 
      - **Return URLs**: `https://ada-kr-pos.com/api/auth/apple/callback`
 7. Next → Done → Continue → Save
 
-> **주의**: Identifier(`tech.adapos.auth.service`)가 `APPLE_CLIENT_ID`입니다. App ID(`tech.adapos.auth`)가 아닙니다. 혼동하면 `invalid_client` 오류가 발생합니다.
+> **주의**: Identifier(`tech.adakrpos.auth.service`)가 `APPLE_CLIENT_ID`입니다. App ID(`tech.adakrpos.auth`)가 아닙니다. 혼동하면 `invalid_client` 오류가 발생합니다.
 
 ---
 
@@ -187,8 +187,8 @@ ngrok이 제공하는 HTTPS URL(예: `https://xxxx.ngrok.io`)을 Apple Developer
 
 Services ID가 아닌 App ID를 `APPLE_CLIENT_ID`로 사용했을 때 발생합니다.
 
-- 확인: `APPLE_CLIENT_ID` 값이 `tech.adapos.auth.service` 형태인지 확인 (`.service`로 끝나는 Services ID)
-- App ID(`tech.adapos.auth`)를 사용하면 안 됩니다
+- 확인: `APPLE_CLIENT_ID` 값이 `tech.adakrpos.auth.service` 형태인지 확인 (`.service`로 끝나는 Services ID)
+- App ID(`tech.adakrpos.auth`)를 사용하면 안 됩니다
 
 ### `invalid_grant`
 

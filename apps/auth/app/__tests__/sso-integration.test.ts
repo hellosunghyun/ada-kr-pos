@@ -23,6 +23,7 @@ const USERS_TABLE_SQL = `
     bio text,
     contact text,
     sns_links text DEFAULT '{}',
+    cohort text,
     is_verified integer DEFAULT false NOT NULL,
     created_at integer NOT NULL,
     updated_at integer NOT NULL
@@ -170,7 +171,7 @@ describe("SSO integration", () => {
     const request = new Request("https://example.com/api/auth/logout", {
       method: "POST",
       headers: {
-        Cookie: `session=${sessionId}`,
+        Cookie: `adakrpos_session=${sessionId}`,
       },
     });
 

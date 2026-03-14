@@ -65,8 +65,8 @@ wrangler d1 migrations apply ada-kr-pos-db
 | 항목 | 설명 | 어디서 |
 |------|------|--------|
 | Apple Developer Program | 연 $99 유료 계정 | developer.apple.com |
-| App ID | `tech.adapos.auth` (또는 변경) | Certificates, Identifiers & Profiles |
-| Services ID | `tech.adapos.auth.service` → `APPLE_CLIENT_ID` | Certificates, Identifiers & Profiles |
+| App ID | `tech.adakrpos.auth` (또는 변경) | Certificates, Identifiers & Profiles |
+| Services ID | `tech.adakrpos.auth.service` → `APPLE_CLIENT_ID` | Certificates, Identifiers & Profiles |
 | Key (.p8) | ES256 private key → `APPLE_PRIVATE_KEY` | Keys 탭 |
 | Key ID | 10자리 영숫자 → `APPLE_KEY_ID` | Keys 탭 |
 | Team ID | 10자리 영숫자 → `APPLE_TEAM_ID` | Membership 탭 |
@@ -155,7 +155,7 @@ wrangler pages deploy
 
 ---
 
-## 8. SDK 배포 (@adapos/auth)
+## 8. SDK 배포 (@adakrpos/auth)
 
 ```bash
 cd packages/auth-sdk
@@ -169,7 +169,7 @@ npm publish --access public
 
 ### npm 계정 필요
 - npmjs.com 계정
-- `@adapos` org 생성 (또는 기존 org 사용)
+- `@adakrpos` org 생성 (또는 기존 org 사용)
 - `npm login` 후 publish
 
 ---

@@ -2,21 +2,21 @@ import {
   getCachedApiKeyValidity,
   setCachedApiKeyValidity,
 } from "./cache";
-import type { AdaposSession, AdaposUser } from "./types";
+import type { AdakrposSession, AdakrposUser } from "./types";
 
 const DEFAULT_AUTH_URL = "https://ada-kr-pos.com";
 
-export interface AdaposAuthConfig {
+export interface AdakrposAuthConfig {
   apiKey: string;
   authUrl?: string;
 }
 
-export interface AdaposAuthClient {
+export interface AdakrposAuthClient {
   verifySession(
     sessionId: string,
-  ): Promise<{ user: AdaposUser; session: AdaposSession } | null>;
-  getUser(userId: string): Promise<AdaposUser | null>;
-  getCurrentUser(sessionId: string): Promise<AdaposUser | null>;
+  ): Promise<{ user: AdakrposUser; session: AdakrposSession } | null>;
+  getUser(userId: string): Promise<AdakrposUser | null>;
+  getCurrentUser(sessionId: string): Promise<AdakrposUser | null>;
 }
 
 function createUrl(baseUrl: string, path: string): string {
@@ -27,7 +27,7 @@ async function parseJson<T>(response: Response): Promise<T> {
   return (await response.json()) as T;
 }
 
-export function createAdaposAuth(config: AdaposAuthConfig): AdaposAuthClient {
+export function createAdakrposAuth(config: AdakrposAuthConfig): AdakrposAuthClient {
   const baseUrl = config.authUrl ?? DEFAULT_AUTH_URL;
   const apiKey = config.apiKey;
 
@@ -61,7 +61,7 @@ export function createAdaposAuth(config: AdaposAuthConfig): AdaposAuthClient {
     }
 
     if (!response.ok) {
-      throw new Error(`Adapos auth request failed with status ${response.status}`);
+      throw new Error(`Adakrpos auth request failed with status ${response.status}`);
     }
 
     return parseJson<T>(response);
@@ -69,7 +69,7 @@ export function createAdaposAuth(config: AdaposAuthConfig): AdaposAuthClient {
 
   return {
     async verifySession(sessionId: string) {
-      return request<{ user: AdaposUser; session: AdaposSession }>(
+      return request<{ user: AdakrposUser; session: AdakrposSession }>(
         "/api/sdk/verify-session",
         {
           method: "POST",
@@ -80,7 +80,7 @@ export function createAdaposAuth(config: AdaposAuthConfig): AdaposAuthClient {
     },
 
     async getUser(userId: string) {
-      return request<AdaposUser>(`/api/sdk/users/${encodeURIComponent(userId)}`, {
+      return request<AdakrposUser>(`/api/sdk/users/${encodeURIComponent(userId)}`, {
         method: "GET",
       }, { returnNullOnNotFound: true });
     },

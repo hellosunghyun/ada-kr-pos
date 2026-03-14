@@ -191,7 +191,7 @@ describe("Auth Middleware", () => {
       const request = new Request("https://example.com/dashboard", {
         method: "GET",
         headers: {
-          Cookie: "session=invalid-session-id",
+          Cookie: "adakrpos_session=invalid-session-id",
         },
       });
 
@@ -214,7 +214,7 @@ describe("Auth Middleware", () => {
       const request = new Request("https://example.com/dashboard", {
         method: "GET",
         headers: {
-          Cookie: `session=${sessionId}`,
+          Cookie: `adakrpos_session=${sessionId}`,
         },
       });
 
@@ -257,7 +257,7 @@ describe("Auth Middleware", () => {
       const request = new Request("https://example.com/api/user", {
         method: "GET",
         headers: {
-          Cookie: "session=invalid-session-id",
+          Cookie: "adakrpos_session=invalid-session-id",
         },
       });
 
@@ -280,7 +280,7 @@ describe("Auth Middleware", () => {
       const request = new Request("https://example.com/api/user", {
         method: "GET",
         headers: {
-          Cookie: `session=${sessionId}`,
+          Cookie: `adakrpos_session=${sessionId}`,
         },
       });
 
@@ -299,7 +299,7 @@ describe("Auth Middleware", () => {
   });
 
   describe("optionalAuth", () => {
-    it("returns AdaposUnauthContext for missing session cookie (no throw)", async () => {
+    it("returns AdakrposUnauthContext for missing session cookie (no throw)", async () => {
       const request = new Request("https://example.com/home", {
         method: "GET",
       });
@@ -311,11 +311,11 @@ describe("Auth Middleware", () => {
       expect(result.session).toBeNull();
     });
 
-    it("returns AdaposUnauthContext for invalid session ID (no throw)", async () => {
+    it("returns AdakrposUnauthContext for invalid session ID (no throw)", async () => {
       const request = new Request("https://example.com/home", {
         method: "GET",
         headers: {
-          Cookie: "session=invalid-session-id",
+          Cookie: "adakrpos_session=invalid-session-id",
         },
       });
 
@@ -326,13 +326,13 @@ describe("Auth Middleware", () => {
       expect(result.session).toBeNull();
     });
 
-    it("returns AdaposUnauthContext when session exists but user not found (no throw)", async () => {
+    it("returns AdakrposUnauthContext when session exists but user not found (no throw)", async () => {
       const { sessionId } = await createTestSession(kv, "nonexistent-user");
 
       const request = new Request("https://example.com/home", {
         method: "GET",
         headers: {
-          Cookie: `session=${sessionId}`,
+          Cookie: `adakrpos_session=${sessionId}`,
         },
       });
 

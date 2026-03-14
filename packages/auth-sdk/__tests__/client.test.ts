@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createAdaposAuth } from "../src/client";
+import { createAdakrposAuth } from "../src/client";
 import {
   clearApiKeyCache,
   getCachedApiKeyValidity,
   setCachedApiKeyValidity,
 } from "../src/cache";
 
-describe("createAdaposAuth", () => {
+describe("createAdakrposAuth", () => {
   beforeEach(() => {
     clearApiKeyCache();
   });
@@ -18,7 +18,7 @@ describe("createAdaposAuth", () => {
   });
 
   it("returns a client with verifySession, getUser, and getCurrentUser", () => {
-    const client = createAdaposAuth({ apiKey: "ak_test" });
+    const client = createAdakrposAuth({ apiKey: "ak_test" });
 
     expect(client.verifySession).toBeTypeOf("function");
     expect(client.getUser).toBeTypeOf("function");
@@ -29,7 +29,7 @@ describe("createAdaposAuth", () => {
     const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ user: null, session: null }), { status: 404 }),
     );
-    const client = createAdaposAuth({
+    const client = createAdakrposAuth({
       apiKey: "ak_test",
       authUrl: "https://example.com",
     });
@@ -51,7 +51,7 @@ describe("createAdaposAuth", () => {
 
   it("returns null when verifySession receives a 401 response", async () => {
     vi.spyOn(global, "fetch").mockResolvedValue(new Response(null, { status: 401 }));
-    const client = createAdaposAuth({ apiKey: "ak_test" });
+    const client = createAdakrposAuth({ apiKey: "ak_test" });
 
     await expect(client.verifySession("session_123")).resolves.toBeNull();
     expect(getCachedApiKeyValidity("ak_test")).toBe(false);
@@ -69,6 +69,7 @@ describe("createAdaposAuth", () => {
         bio: null,
         contact: null,
         snsLinks: {},
+        cohort: null,
         isVerified: true,
         createdAt: 1,
         updatedAt: 2,
@@ -83,7 +84,7 @@ describe("createAdaposAuth", () => {
     vi.spyOn(global, "fetch").mockResolvedValue(
       new Response(JSON.stringify(payload), { status: 200 }),
     );
-    const client = createAdaposAuth({ apiKey: "ak_test" });
+    const client = createAdakrposAuth({ apiKey: "ak_test" });
 
     await expect(client.verifySession("session_123")).resolves.toEqual(payload);
     expect(getCachedApiKeyValidity("ak_test")).toBe(true);
@@ -93,7 +94,7 @@ describe("createAdaposAuth", () => {
     const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
       new Response(null, { status: 404 }),
     );
-    const client = createAdaposAuth({
+    const client = createAdakrposAuth({
       apiKey: "ak_test",
       authUrl: "https://example.com/base",
     });
@@ -113,7 +114,7 @@ describe("createAdaposAuth", () => {
 
   it("returns null when getUser receives a 404 response", async () => {
     vi.spyOn(global, "fetch").mockResolvedValue(new Response(null, { status: 404 }));
-    const client = createAdaposAuth({ apiKey: "ak_test" });
+    const client = createAdakrposAuth({ apiKey: "ak_test" });
 
     await expect(client.getUser("missing_user")).resolves.toBeNull();
     expect(getCachedApiKeyValidity("ak_test")).toBe(true);
@@ -133,6 +134,7 @@ describe("createAdaposAuth", () => {
             bio: null,
             contact: null,
             snsLinks: {},
+            cohort: null,
             isVerified: false,
             createdAt: 1,
             updatedAt: 2,
@@ -147,7 +149,7 @@ describe("createAdaposAuth", () => {
         { status: 200 },
       ),
     );
-    const client = createAdaposAuth({ apiKey: "ak_test" });
+    const client = createAdakrposAuth({ apiKey: "ak_test" });
 
     await expect(client.getCurrentUser("session_123")).resolves.toEqual(
       expect.objectContaining({ id: "user_123", name: "Ada" }),
@@ -158,7 +160,7 @@ describe("createAdaposAuth", () => {
     const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
       new Response(null, { status: 401 }),
     );
-    const client = createAdaposAuth({ apiKey: "ak_test" });
+    const client = createAdakrposAuth({ apiKey: "ak_test" });
 
     await expect(client.verifySession("session_123")).resolves.toBeNull();
     await expect(client.verifySession("session_123")).resolves.toBeNull();

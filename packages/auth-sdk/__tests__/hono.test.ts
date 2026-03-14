@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Hono } from "hono";
 
 import { clearApiKeyCache } from "../src/cache";
-import { adaposAuth, getAuth, requireAuth } from "../src/hono";
+import { adakrposAuth, getAuth, requireAuth } from "../src/hono";
 
 const config = {
   apiKey: "ak_test",
@@ -20,6 +20,7 @@ const validSession = {
     bio: null,
     contact: null,
     snsLinks: {},
+    cohort: null,
     isVerified: true,
     createdAt: 1,
     updatedAt: 2,
@@ -45,7 +46,7 @@ describe("Hono middleware", () => {
   it("sets the auth function on context", async () => {
     const app = new Hono();
 
-    app.use("*", adaposAuth(config));
+    app.use("*", adakrposAuth(config));
     app.get("/", (c) => c.json({ hasAuth: typeof c.get("auth") === "function" }));
 
     const response = await app.request("http://localhost/");
@@ -58,7 +59,7 @@ describe("Hono middleware", () => {
     const fetchSpy = vi.spyOn(global, "fetch");
     const app = new Hono();
 
-    app.use("*", adaposAuth(config));
+    app.use("*", adakrposAuth(config));
     app.get("/", async (c) => c.json(await getAuth(c)));
 
     const response = await app.request("http://localhost/");
@@ -78,11 +79,11 @@ describe("Hono middleware", () => {
     );
     const app = new Hono();
 
-    app.use("*", adaposAuth(config));
+    app.use("*", adakrposAuth(config));
     app.get("/", async (c) => c.json(await getAuth(c)));
 
     const response = await app.request("http://localhost/", {
-      headers: { Cookie: "session=session_123" },
+      headers: { Cookie: "adakrpos_session=session_123" },
     });
 
     expect(response.status).toBe(200);
@@ -121,7 +122,7 @@ describe("Hono middleware", () => {
     app.get("/", async (c) => c.json(await getAuth(c)));
 
     const response = await app.request("http://localhost/", {
-      headers: { Cookie: "session=session_123" },
+      headers: { Cookie: "adakrpos_session=session_123" },
     });
 
     expect(response.status).toBe(200);
@@ -138,11 +139,11 @@ describe("Hono middleware", () => {
     );
     const app = new Hono();
 
-    app.use("*", adaposAuth(config));
+    app.use("*", adakrposAuth(config));
     app.get("/", (c) => c.text("ok"));
 
     const response = await app.request("http://localhost/", {
-      headers: { Cookie: "session=session_123" },
+      headers: { Cookie: "adakrpos_session=session_123" },
     });
 
     expect(response.status).toBe(200);
@@ -156,14 +157,14 @@ describe("Hono middleware", () => {
     );
     const app = new Hono();
 
-    app.use("*", adaposAuth(config));
+    app.use("*", adakrposAuth(config));
     app.get("/", async (c) => {
       await getAuth(c);
       return c.text("ok");
     });
 
     const response = await app.request("http://localhost/", {
-      headers: { Cookie: "session=session_123" },
+      headers: { Cookie: "adakrpos_session=session_123" },
     });
 
     expect(response.status).toBe(200);

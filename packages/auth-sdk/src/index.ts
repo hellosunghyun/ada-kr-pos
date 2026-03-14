@@ -1,6 +1,6 @@
 export * from "./types";
-export { createAdaposAuth } from "./client";
-export type { AdaposAuthClient, AdaposAuthConfig } from "./client";
+export { createAdakrposAuth } from "./client";
+export type { AdakrposAuthClient, AdakrposAuthConfig } from "./client";
 export {
   clearApiKeyCache,
   getCachedApiKeyValidity,

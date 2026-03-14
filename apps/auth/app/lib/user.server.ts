@@ -1,4 +1,4 @@
-import type { AdaposUser } from "@adapos/auth";
+import type { AdakrposUser } from "@adakrpos/auth";
 import { eq } from "drizzle-orm";
 import { createDb } from "~/db/index";
 import { users } from "~/db/schema";
@@ -25,7 +25,7 @@ function parseSnsLinks(value: string | null): Record<string, string> {
   }
 }
 
-function mapUser(row: UserRow): AdaposUser {
+function mapUser(row: UserRow): AdakrposUser {
   return {
     id: row.id,
     email: row.appleEmail ?? null,
@@ -36,13 +36,14 @@ function mapUser(row: UserRow): AdaposUser {
     bio: row.bio ?? null,
     contact: row.contact ?? null,
     snsLinks: parseSnsLinks(row.snsLinks ?? null),
+    cohort: row.cohort ?? null,
     isVerified: row.isVerified,
     createdAt: row.createdAt.getTime(),
     updatedAt: row.updatedAt.getTime(),
   };
 }
 
-async function getRequiredUserById(db: Db, userId: string): Promise<AdaposUser> {
+async function getRequiredUserById(db: Db, userId: string): Promise<AdakrposUser> {
   const user = await getUserById(db, userId);
 
   if (!user) {
@@ -60,7 +61,7 @@ export async function createUser(
     nickname?: string;
     name?: string;
   }
-): Promise<AdaposUser> {
+): Promise<AdakrposUser> {
   const now = new Date();
 
   await db.insert(users).values({
@@ -77,22 +78,22 @@ export async function createUser(
   return getRequiredUserById(db, data.id);
 }
 
-export async function getUserById(db: Db, userId: string): Promise<AdaposUser | null> {
+export async function getUserById(db: Db, userId: string): Promise<AdakrposUser | null> {
   const row = await db.select().from(users).where(eq(users.id, userId)).get();
   return row ? mapUser(row) : null;
 }
 
-export async function getUserByAppleSub(db: Db, appleSub: string): Promise<AdaposUser | null> {
+export async function getUserByAppleSub(db: Db, appleSub: string): Promise<AdakrposUser | null> {
   const row = await db.select().from(users).where(eq(users.appleSub, appleSub)).get();
   return row ? mapUser(row) : null;
 }
 
-export async function getUserByEmail(db: Db, email: string): Promise<AdaposUser | null> {
+export async function getUserByEmail(db: Db, email: string): Promise<AdakrposUser | null> {
   const row = await db.select().from(users).where(eq(users.appleEmail, email)).get();
   return row ? mapUser(row) : null;
 }
 
-export async function getUserByVerifiedEmail(db: Db, verifiedEmail: string): Promise<AdaposUser | null> {
+export async function getUserByVerifiedEmail(db: Db, verifiedEmail: string): Promise<AdakrposUser | null> {
   const row = await db.select().from(users).where(eq(users.verifiedEmail, verifiedEmail)).get();
   return row ? mapUser(row) : null;
 }
@@ -106,8 +107,9 @@ export async function updateUserProfile(
     bio?: string;
     contact?: string;
     snsLinks?: Record<string, string>;
+    cohort?: string | null;
   }
-): Promise<AdaposUser> {
+): Promise<AdakrposUser> {
   const updateData: Partial<typeof users.$inferInsert> = {
     updatedAt: new Date(),
   };
@@ -119,13 +121,14 @@ export async function updateUserProfile(
   if (profile.snsLinks !== undefined) {
     updateData.snsLinks = JSON.stringify(profile.snsLinks);
   }
+  if (profile.cohort !== undefined) updateData.cohort = profile.cohort;
 
   await db.update(users).set(updateData).where(eq(users.id, userId));
 
   return getRequiredUserById(db, userId);
 }
 
-export async function updateProfilePhoto(db: Db, userId: string, photoUrl: string): Promise<AdaposUser> {
+export async function updateProfilePhoto(db: Db, userId: string, photoUrl: string): Promise<AdakrposUser> {
   await db
     .update(users)
     .set({
@@ -137,7 +140,7 @@ export async function updateProfilePhoto(db: Db, userId: string, photoUrl: strin
   return getRequiredUserById(db, userId);
 }
 
-export async function verifyUserEmail(db: Db, userId: string, verifiedEmail: string): Promise<AdaposUser> {
+export async function verifyUserEmail(db: Db, userId: string, verifiedEmail: string): Promise<AdakrposUser> {
   await db
     .update(users)
     .set({
@@ -155,12 +158,25 @@ export async function linkAppleAccount(
   userId: string,
   appleSub: string,
   appleEmail?: string
-): Promise<AdaposUser> {
+): Promise<AdakrposUser> {
   await db
     .update(users)
     .set({
       appleSub: appleSub,
       appleEmail: appleEmail ?? null,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId));
+
+  return getRequiredUserById(db, userId);
+}
+
+export async function unlinkAppleAccount(db: Db, userId: string): Promise<AdakrposUser> {
+  await db
+    .update(users)
+    .set({
+      appleSub: null,
+      appleEmail: null,
       updatedAt: new Date(),
     })
     .where(eq(users.id, userId));
@@ -175,7 +191,7 @@ export async function findOrCreateUser(
     appleEmail?: string;
     name?: string;
   }
-): Promise<AdaposUser> {
+): Promise<AdakrposUser> {
   const existingById = await getUserById(db, data.id);
   if (existingById) return existingById;
 

@@ -12,7 +12,7 @@
     "deploy": "wrangler pages deploy"
   },
   "dependencies": {
-    "@adapos/auth": "workspace:*",
+    "@adakrpos/auth": "workspace:*",
     "@react-router/cloudflare": "^7.4.0",
     "drizzle-orm": "^0.45.1",
     "isbot": "^4.1.0",

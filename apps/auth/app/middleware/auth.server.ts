@@ -2,10 +2,10 @@ import { redirect } from "react-router";
 import type { AppLoadContext } from "react-router";
 import type {
   AuthContext,
-  AdaposAuthContext,
-  AdaposUnauthContext,
-  AdaposUser,
-} from "@adapos/auth";
+  AdakrposAuthContext,
+  AdakrposUnauthContext,
+  AdakrposUser,
+} from "@adakrpos/auth";
 import { getSessionIdFromCookie } from "~/lib/cookie.server";
 import { getSession } from "~/lib/session.server";
 import { createDb } from "~/db/index";
@@ -16,7 +16,7 @@ import type { Env } from "~/types/env";
 async function getUserById(
   db: ReturnType<typeof createDb>,
   userId: string
-): Promise<AdaposUser | null> {
+): Promise<AdakrposUser | null> {
   try {
     const user = await db
       .select()
@@ -68,7 +68,7 @@ async function getAuthContext(
       user: null,
       session: null,
       isAuthenticated: false,
-    } as AdaposUnauthContext;
+    } as AdakrposUnauthContext;
   }
 
   const session = await getSession(kv, sessionId);
@@ -78,7 +78,7 @@ async function getAuthContext(
       user: null,
       session: null,
       isAuthenticated: false,
-    } as AdaposUnauthContext;
+    } as AdakrposUnauthContext;
   }
 
   const user = await getUserById(db, session.userId);
@@ -88,7 +88,7 @@ async function getAuthContext(
       user: null,
       session: null,
       isAuthenticated: false,
-    } as AdaposUnauthContext;
+    } as AdakrposUnauthContext;
   }
 
   return {
@@ -100,26 +100,26 @@ async function getAuthContext(
       createdAt: session.createdAt,
     },
     isAuthenticated: true,
-  } as AdaposAuthContext;
+  } as AdakrposAuthContext;
 }
 
 export async function requireAuthPage(
   request: Request,
   context: AppLoadContext
-): Promise<AdaposAuthContext> {
+): Promise<AdakrposAuthContext> {
   const authContext = await getAuthContext(request, context);
 
   if (!authContext.isAuthenticated) {
     throw redirect("/login");
   }
 
-  return authContext as AdaposAuthContext;
+  return authContext as AdakrposAuthContext;
 }
 
 export async function requireAuthApi(
   request: Request,
   context: AppLoadContext
-): Promise<AdaposAuthContext> {
+): Promise<AdakrposAuthContext> {
   const authContext = await getAuthContext(request, context);
 
   if (!authContext.isAuthenticated) {
@@ -129,7 +129,7 @@ export async function requireAuthApi(
     });
   }
 
-  return authContext as AdaposAuthContext;
+  return authContext as AdakrposAuthContext;
 }
 
 export async function optionalAuth(

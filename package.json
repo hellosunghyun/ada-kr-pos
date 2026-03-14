@@ -1,13 +1,13 @@
 {
-  "name": "adapos",
+  "name": "adakrpos",
   "private": true,
   "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "pnpm --filter auth dev",
     "build": "pnpm --filter auth build",
-    "typecheck": "pnpm --filter auth typecheck && pnpm --filter '@adapos/auth' typecheck",
-    "test": "pnpm --filter auth test && pnpm --filter '@adapos/auth' test",
+    "typecheck": "pnpm --filter auth typecheck && pnpm --filter '@adakrpos/auth' typecheck",
+    "test": "pnpm --filter auth test && pnpm --filter '@adakrpos/auth' test",
     "deploy": "pnpm --filter auth deploy",
     "lint": "biome check ."
   },

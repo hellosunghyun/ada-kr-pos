@@ -25,6 +25,7 @@ const USERS_TABLE_SQL = `
     bio text,
     contact text,
     sns_links text DEFAULT '{}',
+    cohort text,
     is_verified integer DEFAULT false NOT NULL,
     created_at integer NOT NULL,
     updated_at integer NOT NULL
@@ -58,7 +59,7 @@ describe("User CRUD", () => {
     context = makeContext();
   });
 
-  it("createUser creates a user in D1 and returns the mapped AdaposUser", async () => {
+  it("createUser creates a user in D1 and returns the mapped AdakrposUser", async () => {
     const user = await createUser(db, {
       id: "apple-sub-create",
       appleEmail: "create@example.com",
@@ -122,8 +123,8 @@ describe("User CRUD", () => {
       bio: "Hello world",
       contact: "contact@example.com",
       snsLinks: {
-        github: "https://github.com/adapos",
-        x: "https://x.com/adapos",
+        github: "https://github.com/adakrpos",
+        x: "https://x.com/adakrpos",
       },
     });
 
@@ -132,8 +133,8 @@ describe("User CRUD", () => {
     expect(updated.bio).toBe("Hello world");
     expect(updated.contact).toBe("contact@example.com");
     expect(updated.snsLinks).toEqual({
-      github: "https://github.com/adapos",
-      x: "https://x.com/adapos",
+      github: "https://github.com/adakrpos",
+      x: "https://x.com/adakrpos",
     });
   });
 
@@ -206,7 +207,7 @@ describe("User CRUD", () => {
     const request = new Request("https://example.com/api/me", {
       method: "GET",
       headers: {
-        Cookie: `session=${sessionId}`,
+        Cookie: `adakrpos_session=${sessionId}`,
       },
     });
 
@@ -249,7 +250,7 @@ describe("User CRUD", () => {
       headers: {
         "Content-Type": "application/json",
         Origin: "https://example.com",
-        Cookie: `session=${sessionId}`,
+        Cookie: `adakrpos_session=${sessionId}`,
       },
        body: JSON.stringify({
          nickname: "patched",

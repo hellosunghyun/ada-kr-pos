@@ -21,7 +21,7 @@ function decodeJwtPart(part: string): Record<string, unknown> {
 }
 
 const TEST_ENV = {
-  APPLE_CLIENT_ID: "tech.adapos.auth.service",
+  APPLE_CLIENT_ID: "tech.adakrpos.auth.service",
   APPLE_TEAM_ID: "TEAM123456",
   APPLE_KEY_ID: "KEY123456",
   APPLE_PRIVATE_KEY: "",
@@ -50,7 +50,7 @@ describe("Apple Sign-In", () => {
     expect(header.alg).toBe("ES256");
     expect(header.kid).toBe("KEY123456");
     expect(payload.iss).toBe("TEAM123456");
-    expect(payload.sub).toBe("tech.adapos.auth.service");
+    expect(payload.sub).toBe("tech.adakrpos.auth.service");
     expect(payload.aud).toBe("https://appleid.apple.com");
 
     const iat = Number(payload.iat);
@@ -85,19 +85,19 @@ describe("Apple Sign-In", () => {
       .setProtectedHeader({ alg: "ES256", kid: "apple-test-kid" })
       .setIssuer("https://appleid.apple.com")
       .setSubject("000123.abc.123")
-      .setAudience("tech.adapos.auth.service")
+      .setAudience("tech.adakrpos.auth.service")
       .setIssuedAt(now)
       .setExpirationTime(now + 3600)
       .sign(privateKey);
 
-    const payload = await verifyIdToken(idToken, "tech.adapos.auth.service");
+    const payload = await verifyIdToken(idToken, "tech.adakrpos.auth.service");
     expect(payload.sub).toBe("000123.abc.123");
     expect(payload.email).toBe("user@icloud.com");
     expect(payload.emailVerified).toBe(true);
   });
 
   it("throws on invalid token", async () => {
-    await expect(verifyIdToken("invalid.token.here", "tech.adapos.auth.service")).rejects.toThrow();
+    await expect(verifyIdToken("invalid.token.here", "tech.adakrpos.auth.service")).rejects.toThrow();
   });
 
   it("extracts sub and email from ID token payload", async () => {
@@ -132,14 +132,14 @@ describe("Apple Sign-In", () => {
 
    it("builds Apple OAuth URL with form_post mode", () => {
      const url = buildAppleAuthUrl(
-       "tech.adapos.auth.service",
+       "tech.adakrpos.auth.service",
        "https://ada-kr-pos.com/api/auth/apple/callback",
        "test-state-123",
        "test-nonce-456"
      );
 
     expect(url).toContain("https://appleid.apple.com/auth/authorize");
-    expect(url).toContain("client_id=tech.adapos.auth.service");
+    expect(url).toContain("client_id=tech.adakrpos.auth.service");
     expect(url).toContain("response_mode=form_post");
     expect(url).toContain("scope=name+email");
     expect(url).toContain("state=test-state-123");

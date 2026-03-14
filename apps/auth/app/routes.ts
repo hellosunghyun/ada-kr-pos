@@ -20,4 +20,6 @@ export default [
   route("api/sdk/verify-session", "routes/api.sdk.verify-session.ts"),
   route("api/sdk/verify-key", "routes/api.sdk.verify-key.ts"),
   route("api/sdk/users/:id", "routes/api.sdk.users.$id.ts"),
+  route("api/auth/unlink-apple", "routes/api.auth.unlink-apple.ts"),
+  route("api/photos/*", "routes/api.photos.$.ts"),
 ] satisfies RouteConfig;

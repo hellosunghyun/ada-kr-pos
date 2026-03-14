@@ -22,6 +22,7 @@ const USERS_TABLE_SQL = `
     bio text,
     contact text,
     sns_links text DEFAULT '{}',
+    cohort text,
     is_verified integer DEFAULT false NOT NULL,
     created_at integer NOT NULL,
     updated_at integer NOT NULL
@@ -259,7 +260,7 @@ describe("Magic link login", () => {
 
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe("/mypage");
-    expect(setCookie).toContain("session=");
+    expect(setCookie).toContain("adakrpos_session=");
     expect(setCookie).toContain("HttpOnly");
   });
 });

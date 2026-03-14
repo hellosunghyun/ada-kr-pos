@@ -1,6 +1,6 @@
-import { createAdaposAuth } from "./client";
-import type { AdaposAuthConfig } from "./client";
-import type { AuthContext, AdaposAuthContext, AdaposUnauthContext } from "./types";
+import { createAdakrposAuth } from "./client";
+import type { AdakrposAuthConfig } from "./client";
+import type { AuthContext, AdakrposAuthContext, AdakrposUnauthContext } from "./types";
 
 // Augment Express Request type
 declare global {
@@ -11,14 +11,14 @@ declare global {
   }
 }
 
-const UNAUTH_CONTEXT: AdaposUnauthContext = {
+const UNAUTH_CONTEXT: AdakrposUnauthContext = {
   user: null,
   session: null,
   isAuthenticated: false,
 };
 
 function getSessionId(cookieHeader: string): string | null {
-  const sessionMatch = cookieHeader.match(/(?:^|;\s*)session=([^;]+)/);
+  const sessionMatch = cookieHeader.match(/(?:^|;\s*)adakrpos_session=([^;]+)/);
 
   if (!sessionMatch) {
     return null;
@@ -51,7 +51,7 @@ function createAuthFn(client: any, sessionId: string | null): () => Promise<Auth
           user: result.user,
           session: result.session,
           isAuthenticated: true,
-        } satisfies AdaposAuthContext;
+        } satisfies AdakrposAuthContext;
       })();
     }
 
@@ -60,8 +60,8 @@ function createAuthFn(client: any, sessionId: string | null): () => Promise<Auth
 }
 
 // Express middleware — attaches lazy auth function to req
-export function adaposAuthExpress(config: AdaposAuthConfig) {
-  const client = createAdaposAuth(config);
+export function adakrposAuthExpress(config: AdakrposAuthConfig) {
+  const client = createAdakrposAuth(config);
 
   return async (req: any, res: any, next: any) => {
     const cookieHeader = req.headers?.cookie ?? "";
@@ -75,8 +75,8 @@ export function adaposAuthExpress(config: AdaposAuthConfig) {
 }
 
 // Express middleware that requires authentication
-export function requireAuthExpress(config: AdaposAuthConfig) {
-  const client = createAdaposAuth(config);
+export function requireAuthExpress(config: AdakrposAuthConfig) {
+  const client = createAdakrposAuth(config);
 
   return async (req: any, res: any, next: any) => {
     const cookieHeader = req.headers?.cookie ?? "";

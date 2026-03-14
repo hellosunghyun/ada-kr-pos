@@ -125,7 +125,7 @@ describe("Cookie Management", () => {
        const future = Date.now() + 7 * 24 * 60 * 60 * 1000;
        const cookie = setSessionCookie("sess-123", future, ".ada-kr-pos.com");
 
-       expect(cookie).toContain("session=sess-123");
+       expect(cookie).toContain("adakrpos_session=sess-123");
        expect(cookie).toContain("Domain=.ada-kr-pos.com");
        expect(cookie).toContain("HttpOnly");
        expect(cookie).toContain("Secure");
@@ -138,7 +138,7 @@ describe("Cookie Management", () => {
        const future = Date.now() + 7 * 24 * 60 * 60 * 1000;
        const cookie = setSessionCookie("sess-456", future, "");
 
-       expect(cookie).toContain("session=sess-456");
+       expect(cookie).toContain("adakrpos_session=sess-456");
        expect(cookie).not.toContain("Domain=");
        expect(cookie).toContain("HttpOnly");
      });
@@ -153,7 +153,7 @@ describe("Cookie Management", () => {
    describe("clearSessionCookie", () => {
      it("builds Max-Age=0 cookie to clear session", () => {
        const cookie = clearSessionCookie(".ada-kr-pos.com");
-       expect(cookie).toContain("session=;");
+       expect(cookie).toContain("adakrpos_session=;");
        expect(cookie).toContain("Max-Age=0");
        expect(cookie).toContain("Domain=.ada-kr-pos.com");
      });
@@ -161,7 +161,7 @@ describe("Cookie Management", () => {
 
   describe("getSessionIdFromCookie", () => {
     it("extracts session ID from Cookie header", () => {
-      const sessionId = getSessionIdFromCookie("session=abc-123-xyz; other=value");
+      const sessionId = getSessionIdFromCookie("adakrpos_session=abc-123-xyz; other=value");
       expect(sessionId).toBe("abc-123-xyz");
     });
 
