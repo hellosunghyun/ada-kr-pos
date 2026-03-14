@@ -156,6 +156,41 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 ---
 
+## 로그아웃
+
+외부 서브도메인에서도 GET 요청으로 로그아웃할 수 있습니다.
+
+```
+https://ada-kr-pos.com/api/auth/logout
+https://ada-kr-pos.com/api/auth/logout?callbackUrl=https://divelog.ada-kr-pos.com
+```
+
+| 항목 | 설명 |
+|------|------|
+| **메서드** | GET, POST 모두 지원 |
+| **callbackUrl** | 로그아웃 후 리다이렉트할 URL (없으면 `/login`) |
+| **도메인 제한** | 로그인과 동일 (`https` + `*.ada-kr-pos.com`) |
+
+### 예시
+
+```html
+<!-- 링크로 로그아웃 -->
+<a href="https://ada-kr-pos.com/api/auth/logout?callbackUrl=https://divelog.ada-kr-pos.com">
+  로그아웃
+</a>
+```
+
+```typescript
+// JS에서 로그아웃
+function logout() {
+  const logoutUrl = new URL("https://ada-kr-pos.com/api/auth/logout");
+  logoutUrl.searchParams.set("callbackUrl", window.location.origin);
+  window.location.href = logoutUrl.toString();
+}
+```
+
+---
+
 ## 주의사항
 
 1. **callbackUrl은 반드시 전체 URL**이어야 합니다 (경로만 X)

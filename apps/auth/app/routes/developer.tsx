@@ -437,10 +437,24 @@ if (!auth.isAuthenticated) {
 }
 \`\`\`
 
+## 로그아웃
+외부 서브도메인에서도 GET 요청으로 로그아웃할 수 있습니다.
+
+\`\`\`
+https://ada-kr-pos.com/api/auth/logout
+https://ada-kr-pos.com/api/auth/logout?callbackUrl=https://your-app.ada-kr-pos.com
+\`\`\`
+
+- GET/POST 모두 지원
+- 세션 쿠키 삭제 + 서버 세션 무효화
+- callbackUrl이 없으면 /login으로 이동
+- callbackUrl 도메인 제한은 로그인과 동일 (https + *.ada-kr-pos.com)
+
 ## 참고
 - SDK는 401/403 응답 시 해당 API 키를 30초간 무효로 캐시합니다.
 - 키 교체 후 즉시 반영하려면: \`import { clearApiKeyCache } from "@adakrpos/auth"; clearApiKeyCache();\`
-- 미인증 사용자는 \`https://ada-kr-pos.com/login?callbackUrl=<현재URL>\` 로 리다이렉트하세요.`;
+- 미인증 사용자는 \`https://ada-kr-pos.com/login?callbackUrl=<현재URL>\` 로 리다이렉트하세요.
+- 로그아웃: \`https://ada-kr-pos.com/api/auth/logout?callbackUrl=<돌아갈URL>\``;
               navigator.clipboard.writeText(text);
               const btn = document.querySelector(
                 ".btn-copy-docs",
@@ -913,6 +927,53 @@ window.location.href = loginUrl.toString();
               지원합니다. 이미 로그인된 상태에서 <code>callbackUrl</code>이
               포함된 로그인 페이지에 접근하면 바로 해당 URL로 리다이렉트됩니다.
             </p>
+          </div>
+        </details>
+
+        <details className="docs-group">
+          <summary className="docs-group-title">로그아웃</summary>
+          <div className="docs-content">
+            <p>
+              외부 서브도메인에서도 GET 요청으로 로그아웃할 수 있습니다. 세션
+              쿠키 삭제와 서버 세션 무효화가 동시에 처리됩니다.
+            </p>
+            <pre className="docs-code">{`https://ada-kr-pos.com/api/auth/logout
+https://ada-kr-pos.com/api/auth/logout?callbackUrl=https://your-app.ada-kr-pos.com`}</pre>
+
+            <h4>동작</h4>
+            <div className="docs-error-table">
+              <div className="docs-error-row docs-error-header">
+                <span>항목</span>
+                <span>설명</span>
+              </div>
+              <div className="docs-error-row">
+                <code>메서드</code>
+                <span>GET, POST 모두 지원</span>
+              </div>
+              <div className="docs-error-row">
+                <code>callbackUrl</code>
+                <span>
+                  로그아웃 후 리다이렉트할 URL (없으면 <code>/login</code>)
+                </span>
+              </div>
+              <div className="docs-error-row">
+                <code>도메인 제한</code>
+                <span>
+                  로그인과 동일 (<code>https</code> +{" "}
+                  <code>*.ada-kr-pos.com</code>)
+                </span>
+              </div>
+            </div>
+
+            <h4>예시</h4>
+            <pre className="docs-code">{`// 링크로 로그아웃
+<a href="https://ada-kr-pos.com/api/auth/logout?callbackUrl=https://your-app.ada-kr-pos.com">
+  로그아웃
+</a>
+
+// JS에서 로그아웃
+window.location.href = "https://ada-kr-pos.com/api/auth/logout?callbackUrl=" +
+  encodeURIComponent(window.location.origin);`}</pre>
           </div>
         </details>
       </div>
