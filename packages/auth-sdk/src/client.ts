@@ -4,7 +4,7 @@ import {
 } from "./cache";
 import type { AdaposSession, AdaposUser } from "./types";
 
-const DEFAULT_AUTH_URL = "https://adapos.tech";
+const DEFAULT_AUTH_URL = "https://ada-kr-pos.com";
 
 export interface AdaposAuthConfig {
   apiKey: string;

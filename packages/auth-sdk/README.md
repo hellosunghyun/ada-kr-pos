@@ -10,7 +10,7 @@ pnpm add @adapos/auth
 
 ## Quick Start
 
-Get an API key from the [ADA Developer Portal](https://adapos.tech/developer), then:
+Get an API key from the [ADA Developer Portal](https://ada-kr-pos.com/developer), then:
 
 ```typescript
 import { adaposAuth, getAuth } from '@adapos/auth/hono';
@@ -99,7 +99,7 @@ Attaches a lazy `auth` function to the Hono context. Call `getAuth(c)` in your h
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `apiKey` | `string` | required | Your API key from the developer portal |
-| `authUrl` | `string` | `https://adapos.tech` | Auth server URL (for self-hosting) |
+| `authUrl` | `string` | `https://ada-kr-pos.com` | Auth server URL (for self-hosting) |
 
 ### `getAuth(c)` — Hono helper
 
@@ -206,13 +206,13 @@ clearApiKeyCache();
 ## FAQ
 
 **Q: Where do I get an API key?**
-Log in at [adapos.tech](https://adapos.tech) with your @pos.idserve.net email, then visit the [Developer Portal](https://adapos.tech/developer).
+Log in at [ada-kr-pos.com](https://ada-kr-pos.com) with your @pos.idserve.net email, then visit the [Developer Portal](https://ada-kr-pos.com/developer).
 
 **Q: Can I use this on the client side?**
 No. API keys must stay server-side only. Never expose your API key in browser code.
 
 **Q: What happens when a session expires?**
-`auth.isAuthenticated` will be `false`. Redirect the user to `https://adapos.tech/login`.
+`auth.isAuthenticated` will be `false`. Redirect the user to `https://ada-kr-pos.com/login`.
 
 **Q: Does this work with Cloudflare Workers?**
 Yes. Use `@adapos/auth/generic` with `verifyRequest`, or `@adapos/auth/hono` if you're using Hono.
