@@ -1,7 +1,10 @@
 name = "ada-kr-pos"
+main = "./build/server/index.js"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
-pages_build_output_dir = "./build/client"
+
+[assets]
+directory = "./build/client"
 
 [[d1_databases]]
 binding = "DB"
