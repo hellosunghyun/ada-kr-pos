@@ -98,7 +98,7 @@ export default function App() {
         <Outlet />
       </main>
       <footer className="site-footer">
-        <p>© Apple Developer Academy @ POSTECH</p>
+        <p>본 서비스는 구성원이 만든 비공식 서비스이며, Apple Developer Academy @ POSTECH와 공식적인 관련이 없습니다.</p>
       </footer>
     </div>
   );
@@ -128,7 +128,7 @@ export function ErrorBoundary() {
             </div>
           </main>
           <footer className="site-footer">
-            <p>© Apple Developer Academy @ POSTECH</p>
+            <p>본 서비스는 구성원이 만든 비공식 서비스이며, Apple Developer Academy @ POSTECH와 공식적인 관련이 없습니다.</p>
           </footer>
         </div>
       );
@@ -153,7 +153,7 @@ export function ErrorBoundary() {
           </div>
         </main>
         <footer className="site-footer">
-          <p>© Apple Developer Academy @ POSTECH</p>
+          <p>본 서비스는 구성원이 만든 비공식 서비스이며, Apple Developer Academy @ POSTECH와 공식적인 관련이 없습니다.</p>
         </footer>
       </div>
     );
@@ -178,7 +178,7 @@ export function ErrorBoundary() {
         </div>
       </main>
       <footer className="site-footer">
-        <p>© Apple Developer Academy @ POSTECH</p>
+        <p>본 서비스는 구성원이 만든 비공식 서비스이며, Apple Developer Academy @ POSTECH와 공식적인 관련이 없습니다.</p>
       </footer>
     </div>
   );
