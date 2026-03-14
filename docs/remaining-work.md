@@ -10,7 +10,7 @@ wrangler.toml의 placeholder ID들을 실제 값으로 교체해야 함.
 
 ```bash
 # D1 데이터베이스
-wrangler d1 create ada-auth-db
+wrangler d1 create ada-kr-pos-db
 # → database_id를 wrangler.toml에 기입
 
 # KV 네임스페이스 (4개)
@@ -21,14 +21,14 @@ wrangler kv namespace create RATE_LIMITS
 # → 각 id를 wrangler.toml에 기입
 
 # R2 버킷
-wrangler r2 bucket create ada-auth-profile-photos
+wrangler r2 bucket create ada-kr-pos-profile-photos
 ```
 
 ### D1 마이그레이션 실행
 
 ```bash
 cd apps/auth
-wrangler d1 migrations apply ada-auth-db
+wrangler d1 migrations apply ada-kr-pos-db
 ```
 
 ---
@@ -39,12 +39,12 @@ wrangler d1 migrations apply ada-auth-db
 
 | 타입 | 이름 | 값 | 프록시 |
 |------|------|-----|--------|
-| CNAME | `@` | `ada-auth.pages.dev` | Proxied ✅ |
+| CNAME | `@` | `ada-kr-pos.pages.dev` | Proxied ✅ |
 | CNAME | `www` | `ada-kr-pos.com` | Proxied ✅ |
 
 ### Cloudflare Pages 커스텀 도메인
 
-1. Pages > ada-auth > Custom domains
+1. Pages > ada-kr-pos > Custom domains
 2. `ada-kr-pos.com` 추가
 3. SSL 인증서 자동 발급 확인
 

@@ -5,7 +5,7 @@
 
 set -e
 
-echo "Setting up secrets for ada-auth..."
+echo "Setting up secrets for ada-kr-pos..."
 
 wrangler secret put APPLE_CLIENT_ID
 wrangler secret put APPLE_TEAM_ID

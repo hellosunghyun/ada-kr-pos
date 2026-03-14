@@ -1,4 +1,4 @@
-// Test helpers for ada-auth-server tests
+// Test helpers for ada-kr-pos-server tests
 // Full helpers will work after T2 (D1 schema) is complete
 
 type DB = D1Database; // Will be replaced with drizzle DB type after T2

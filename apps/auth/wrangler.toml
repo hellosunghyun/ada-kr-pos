@@ -1,4 +1,4 @@
-name = "ada-auth"
+name = "ada-kr-pos"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "./build/client"
@@ -26,7 +26,7 @@ id = "903ba363b0ca4203ac6758a443c8da09"
 
 [[r2_buckets]]
 binding = "PROFILE_PHOTOS"
-bucket_name = "ada-auth-profile-photos"
+bucket_name = "ada-kr-pos-profile-photos"
 
 [vars]
 COOKIE_DOMAIN = ".ada-kr-pos.com"
