@@ -53,7 +53,6 @@ export default function Login() {
       <div className="login-card">
         <h1>PORTAL</h1>
         <p>Apple Developer Academy @ POSTECH</p>
-        <p className="unofficial-notice">구성원이 만든 비공식 서비스입니다</p>
 
         <a href="/api/auth/apple" className="apple-signin-btn">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" width="14" height="18" fill="currentColor" aria-hidden="true">
