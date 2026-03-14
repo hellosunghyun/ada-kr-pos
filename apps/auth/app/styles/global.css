@@ -509,7 +509,7 @@ textarea.form-input {
 
 .login-card > p {
   color: var(--color-text-secondary);
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-8);
   font-size: var(--text-base);
   letter-spacing: -0.022em;
 }
