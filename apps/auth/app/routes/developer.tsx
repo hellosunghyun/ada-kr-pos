@@ -1,12 +1,16 @@
-import { Form, useLoaderData, useActionData, useFetcher } from "react-router";
-import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
+import { desc, eq } from "drizzle-orm";
+import { Form, useActionData, useFetcher, useLoaderData } from "react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { createDb } from "~/db/index";
 import { developerApps } from "~/db/schema";
+import {
+  generateApiKey,
+  getApiKeyPrefix,
+  hashApiKey,
+} from "~/lib/apikey.server";
 import { requireAuthPage } from "~/middleware/auth.server";
 import { validateCsrf } from "~/middleware/csrf.server";
-import { generateApiKey, hashApiKey, getApiKeyPrefix } from "~/lib/apikey.server";
 import type { Env } from "~/types/env";
-import { eq, desc } from "drizzle-orm";
 
 interface DeveloperApp {
   id: string;
@@ -36,7 +40,10 @@ interface ActionData {
   success?: boolean;
 }
 
-export async function loader({ request, context }: LoaderFunctionArgs): Promise<LoaderData> {
+export async function loader({
+  request,
+  context,
+}: LoaderFunctionArgs): Promise<LoaderData> {
   const auth = await requireAuthPage(request, context);
 
   if (!auth.user.isVerified) {
@@ -70,7 +77,10 @@ export async function loader({ request, context }: LoaderFunctionArgs): Promise<
   };
 }
 
-export async function action({ request, context }: ActionFunctionArgs): Promise<ActionData> {
+export async function action({
+  request,
+  context,
+}: ActionFunctionArgs): Promise<ActionData> {
   await validateCsrf(request);
   const auth = await requireAuthPage(request, context);
 
@@ -139,11 +149,12 @@ export default function DeveloperPortal() {
     );
   }
 
-  const newlyCreatedApp = actionData?.success && actionData.app?.apiKey ? actionData.app : null;
+  const newlyCreatedApp =
+    actionData?.success && actionData.app?.apiKey ? actionData.app : null;
 
   // Check if any regenerate fetcher returned a new API key
   const regeneratedApp = regenerateFetchers.find(
-    (fetcher) => fetcher.data?.success && fetcher.data?.app?.apiKey
+    (fetcher) => fetcher.data?.success && fetcher.data?.app?.apiKey,
   )?.data?.app;
 
   const revealedApp = newlyCreatedApp || regeneratedApp;
@@ -167,7 +178,9 @@ export default function DeveloperPortal() {
           >
             복사
           </button>
-          <p className="api-key-warning">⚠️ 이 키는 다시 볼 수 없습니다. 안전하게 보관하세요.</p>
+          <p className="api-key-warning">
+            ⚠️ 이 키는 다시 볼 수 없습니다. 안전하게 보관하세요.
+          </p>
         </div>
       )}
 
@@ -186,7 +199,9 @@ export default function DeveloperPortal() {
               <div key={app.id} className="app-card">
                 <div className="app-card-header">
                   <div className="app-card-name">
-                    <span className={`status-dot ${app.isActive ? "active" : "inactive"}`} />
+                    <span
+                      className={`status-dot ${app.isActive ? "active" : "inactive"}`}
+                    />
                     <span>{app.name}</span>
                   </div>
                 </div>
@@ -197,7 +212,10 @@ export default function DeveloperPortal() {
                   </span>
                 </div>
                 <div className="app-card-actions">
-                  <fetcher.Form method="post" action={`/api/developer/apps/${app.id}`}>
+                  <fetcher.Form
+                    method="post"
+                    action={`/api/developer/apps/${app.id}`}
+                  >
                     <input type="hidden" name="_method" value="regenerate" />
                     <button
                       type="submit"
@@ -390,16 +408,49 @@ Authorization: Bearer <API_KEY>
 - 404: 세션 또는 사용자를 찾을 수 없음
 - 429: 요청 한도 초과
 
+## 로그인 리다이렉트 (callbackUrl)
+미인증 사용자를 로그인 페이지로 보낼 때 \`callbackUrl\` 파라미터를 사용하면 로그인 후 원래 페이지로 돌아옵니다.
+
+\`\`\`
+https://ada-kr-pos.com/login?callbackUrl=https://your-app.ada-kr-pos.com/current-page
+\`\`\`
+
+- callbackUrl은 \`https://\` + \`*.ada-kr-pos.com\` 도메인만 허용 (Open Redirect 방지)
+- callbackUrl이 없거나 유효하지 않으면 기본 /mypage로 이동
+- Apple 로그인, 매직링크 모두 지원
+
+### 예시 (Hono)
+\`\`\`typescript
+if (!auth.isAuthenticated) {
+  const loginUrl = new URL("https://ada-kr-pos.com/login");
+  loginUrl.searchParams.set("callbackUrl", c.req.url);
+  return c.redirect(loginUrl.toString());
+}
+\`\`\`
+
+### 예시 (Express)
+\`\`\`typescript
+if (!auth.isAuthenticated) {
+  const loginUrl = new URL("https://ada-kr-pos.com/login");
+  loginUrl.searchParams.set("callbackUrl", \`\${req.protocol}://\${req.get("host")}\${req.originalUrl}\`);
+  return res.redirect(loginUrl.toString());
+}
+\`\`\`
+
 ## 참고
 - SDK는 401/403 응답 시 해당 API 키를 30초간 무효로 캐시합니다.
 - 키 교체 후 즉시 반영하려면: \`import { clearApiKeyCache } from "@adakrpos/auth"; clearApiKeyCache();\`
-- 미인증 사용자는 https://ada-kr-pos.com/login 으로 리다이렉트하세요.`;
+- 미인증 사용자는 \`https://ada-kr-pos.com/login?callbackUrl=<현재URL>\` 로 리다이렉트하세요.`;
               navigator.clipboard.writeText(text);
-              const btn = document.querySelector('.btn-copy-docs') as HTMLButtonElement;
+              const btn = document.querySelector(
+                ".btn-copy-docs",
+              ) as HTMLButtonElement;
               if (btn) {
                 const original = btn.textContent;
-                btn.textContent = '복사됨!';
-                setTimeout(() => { btn.textContent = original; }, 2000);
+                btn.textContent = "복사됨!";
+                setTimeout(() => {
+                  btn.textContent = original;
+                }, 2000);
               }
             }}
           >
@@ -407,16 +458,23 @@ Authorization: Bearer <API_KEY>
           </button>
         </div>
         <p className="docs-intro">
-          API 키를 이용해 <code>*.ada-kr-pos.com</code> 서브도메인 서비스에서 사용자 인증을 처리할 수 있습니다.
-          SDK를 사용하거나 HTTP API를 직접 호출하세요.
+          API 키를 이용해 <code>*.ada-kr-pos.com</code> 서브도메인 서비스에서
+          사용자 인증을 처리할 수 있습니다. SDK를 사용하거나 HTTP API를 직접
+          호출하세요.
         </p>
 
         <details className="docs-group" open>
           <summary className="docs-group-title">인증 방식</summary>
           <div className="docs-content">
-            <p>모든 API 요청에 <code>Authorization</code> 헤더를 포함하세요.</p>
+            <p>
+              모든 API 요청에 <code>Authorization</code> 헤더를 포함하세요.
+            </p>
             <pre className="docs-code">{`Authorization: Bearer ak_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`}</pre>
-            <p>API 키가 유효하지 않거나 비활성 상태이면 <code>401</code> 또는 <code>403</code>을 반환합니다. SDK는 무효한 키를 30초간 캐시하여 불필요한 요청을 방지합니다.</p>
+            <p>
+              API 키가 유효하지 않거나 비활성 상태이면 <code>401</code> 또는{" "}
+              <code>403</code>을 반환합니다. SDK는 무효한 키를 30초간 캐시하여
+              불필요한 요청을 방지합니다.
+            </p>
           </div>
         </details>
 
@@ -424,28 +482,42 @@ Authorization: Bearer <API_KEY>
           <summary className="docs-group-title">SSO 동작 원리</summary>
           <div className="docs-content">
             <p>
-              사용자가 <code>ada-kr-pos.com</code>에서 로그인하면 세션 쿠키가 <code>Domain=.ada-kr-pos.com</code>으로 발급됩니다.
-              이 쿠키는 모든 <code>*.ada-kr-pos.com</code> 서브도메인에 자동으로 전달되므로 별도 로그인 없이 인증 상태를 공유할 수 있습니다.
+              사용자가 <code>ada-kr-pos.com</code>에서 로그인하면 세션 쿠키가{" "}
+              <code>Domain=.ada-kr-pos.com</code>으로 발급됩니다. 이 쿠키는 모든{" "}
+              <code>*.ada-kr-pos.com</code> 서브도메인에 자동으로 전달되므로
+              별도 로그인 없이 인증 상태를 공유할 수 있습니다.
             </p>
             <h4>세션 쿠키 사양</h4>
             <div className="docs-error-table">
               <div className="docs-error-row docs-error-header">
-                <span>항목</span><span>값</span>
+                <span>항목</span>
+                <span>값</span>
               </div>
               <div className="docs-error-row">
-                <code>이름</code><span><code>adakrpos_session</code></span>
+                <code>이름</code>
+                <span>
+                  <code>adakrpos_session</code>
+                </span>
               </div>
               <div className="docs-error-row">
-                <code>Domain</code><span><code>.ada-kr-pos.com</code></span>
+                <code>Domain</code>
+                <span>
+                  <code>.ada-kr-pos.com</code>
+                </span>
               </div>
               <div className="docs-error-row">
-                <code>SameSite</code><span><code>Lax</code></span>
+                <code>SameSite</code>
+                <span>
+                  <code>Lax</code>
+                </span>
               </div>
               <div className="docs-error-row">
-                <code>TTL</code><span>7일 (50% 경과 시 자동 갱신)</span>
+                <code>TTL</code>
+                <span>7일 (50% 경과 시 자동 갱신)</span>
               </div>
               <div className="docs-error-row">
-                <code>값</code><span>Opaque UUID (JWT 아님)</span>
+                <code>값</code>
+                <span>Opaque UUID (JWT 아님)</span>
               </div>
             </div>
             <h4>인증 흐름</h4>
@@ -459,7 +531,6 @@ Authorization: Bearer <API_KEY>
         <details className="docs-group">
           <summary className="docs-group-title">SDK — @adakrpos/auth</summary>
           <div className="docs-content">
-
             <h4>설치</h4>
             <pre className="docs-code">{`npm install @adakrpos/auth`}</pre>
 
@@ -470,7 +541,10 @@ Authorization: Bearer <API_KEY>
 @adakrpos/auth/generic  — Web API Request (CF Workers, Deno, Bun)`}</pre>
 
             <h4>코어 클라이언트</h4>
-            <p>가장 기본적인 사용 방법입니다. 세션 ID를 직접 전달하여 인증을 처리합니다.</p>
+            <p>
+              가장 기본적인 사용 방법입니다. 세션 ID를 직접 전달하여 인증을
+              처리합니다.
+            </p>
             <pre className="docs-code">{`import { createAdakrposAuth } from "@adakrpos/auth";
 
 const auth = createAdakrposAuth({
@@ -492,7 +566,10 @@ const user = await auth.getCurrentUser(sessionId);
 const user = await auth.getUser("user-uuid");`}</pre>
 
             <h4>Hono 미들웨어</h4>
-            <p>Hono 앱에서 미들웨어로 인증을 처리합니다. 쿠키에서 세션 ID를 자동으로 추출합니다.</p>
+            <p>
+              Hono 앱에서 미들웨어로 인증을 처리합니다. 쿠키에서 세션 ID를
+              자동으로 추출합니다.
+            </p>
             <pre className="docs-code">{`import { Hono } from "hono";
 import { adakrposAuth, getAuth } from "@adakrpos/auth/hono";
 
@@ -513,7 +590,10 @@ app.get("/api/me", async (c) => {
   return c.json({ user: auth.user });
 });`}</pre>
 
-            <p><code>requireAuth</code>를 사용하면 미인증 요청을 자동으로 401 처리합니다:</p>
+            <p>
+              <code>requireAuth</code>를 사용하면 미인증 요청을 자동으로 401
+              처리합니다:
+            </p>
             <pre className="docs-code">{`import { requireAuth, getAuth } from "@adakrpos/auth/hono";
 
 // 이 라우트 그룹은 인증 필수
@@ -527,7 +607,9 @@ app.get("/api/protected/profile", async (c) => {
 });`}</pre>
 
             <h4>Express 미들웨어</h4>
-            <p>Express 앱에서 <code>req.auth()</code>로 인증 상태에 접근합니다.</p>
+            <p>
+              Express 앱에서 <code>req.auth()</code>로 인증 상태에 접근합니다.
+            </p>
             <pre className="docs-code">{`import express from "express";
 import { adakrposAuthExpress } from "@adakrpos/auth/express";
 
@@ -542,13 +624,17 @@ app.get("/dashboard", async (req, res) => {
   const auth = await req.auth!();
 
   if (!auth.isAuthenticated) {
-    return res.redirect("https://ada-kr-pos.com/login");
+    const loginUrl = new URL("https://ada-kr-pos.com/login");
+    loginUrl.searchParams.set("callbackUrl", \`\${req.protocol}://\${req.get("host")}\${req.originalUrl}\`);
+    return res.redirect(loginUrl.toString());
   }
 
   res.json({ user: auth.user });
 });`}</pre>
 
-            <p><code>requireAuthExpress</code>로 미인증 요청을 자동 차단:</p>
+            <p>
+              <code>requireAuthExpress</code>로 미인증 요청을 자동 차단:
+            </p>
             <pre className="docs-code">{`import { requireAuthExpress } from "@adakrpos/auth/express";
 
 app.use("/api", requireAuthExpress({
@@ -562,7 +648,10 @@ app.get("/api/me", async (req, res) => {
 });`}</pre>
 
             <h4>Generic (Web API Request)</h4>
-            <p>Cloudflare Workers, Deno, Bun 등 Web 표준 <code>Request</code>를 사용하는 환경에서 사용합니다.</p>
+            <p>
+              Cloudflare Workers, Deno, Bun 등 Web 표준 <code>Request</code>를
+              사용하는 환경에서 사용합니다.
+            </p>
             <pre className="docs-code">{`import { verifyRequest } from "@adakrpos/auth/generic";
 
 // Cloudflare Workers 예시
@@ -611,7 +700,11 @@ export default {
 }`}</pre>
 
             <h4>AuthContext</h4>
-            <p>미들웨어(<code>/hono</code>, <code>/express</code>, <code>/generic</code>)가 반환하는 타입입니다. <code>isAuthenticated</code>로 타입 좁히기가 가능합니다.</p>
+            <p>
+              미들웨어(<code>/hono</code>, <code>/express</code>,{" "}
+              <code>/generic</code>)가 반환하는 타입입니다.{" "}
+              <code>isAuthenticated</code>로 타입 좁히기가 가능합니다.
+            </p>
             <pre className="docs-code">{`// 인증됨
 interface AdakrposAuthContext {
   user: AdakrposUser;
@@ -639,10 +732,17 @@ type AuthContext = AdakrposAuthContext | AdakrposUnauthContext;`}</pre>
         <details className="docs-group">
           <summary className="docs-group-title">HTTP API</summary>
           <div className="docs-content">
-            <p>SDK 없이 직접 HTTP 요청을 보낼 수 있습니다. 모든 요청에 <code>Authorization: Bearer &lt;API_KEY&gt;</code> 헤더가 필요합니다.</p>
+            <p>
+              SDK 없이 직접 HTTP 요청을 보낼 수 있습니다. 모든 요청에{" "}
+              <code>Authorization: Bearer &lt;API_KEY&gt;</code> 헤더가
+              필요합니다.
+            </p>
 
             <h4>POST /api/sdk/verify-session</h4>
-            <p>세션 ID를 검증하고 해당 사용자 정보를 반환합니다. 서브도메인에서 <code>adakrpos_session</code> 쿠키 값을 읽어 전달하세요.</p>
+            <p>
+              세션 ID를 검증하고 해당 사용자 정보를 반환합니다. 서브도메인에서{" "}
+              <code>adakrpos_session</code> 쿠키 값을 읽어 전달하세요.
+            </p>
             <pre className="docs-code">{`POST https://ada-kr-pos.com/api/sdk/verify-session
 Content-Type: application/json
 Authorization: Bearer ak_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
@@ -674,7 +774,10 @@ Authorization: Bearer ak_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
     "createdAt": 1710000000000
   }
 }`}</pre>
-            <p className="docs-response-label">실패 응답: <code>404</code> (세션 만료/없음), <code>401</code> (API 키 무효)</p>
+            <p className="docs-response-label">
+              실패 응답: <code>404</code> (세션 만료/없음), <code>401</code>{" "}
+              (API 키 무효)
+            </p>
 
             <h4>GET /api/sdk/users/:id</h4>
             <p>사용자 ID로 프로필 정보를 조회합니다.</p>
@@ -696,15 +799,24 @@ Authorization: Bearer ak_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`}</pre>
   "createdAt": 1710000000000,
   "updatedAt": 1710000000000
 }`}</pre>
-            <p className="docs-response-label">실패 응답: <code>404</code> (사용자 없음), <code>401</code> (API 키 무효)</p>
+            <p className="docs-response-label">
+              실패 응답: <code>404</code> (사용자 없음), <code>401</code> (API
+              키 무효)
+            </p>
 
             <h4>POST /api/sdk/verify-key</h4>
-            <p>API 키가 유효하고 활성 상태인지 확인합니다. 서비스 시작 시 키 검증에 사용하세요.</p>
+            <p>
+              API 키가 유효하고 활성 상태인지 확인합니다. 서비스 시작 시 키
+              검증에 사용하세요.
+            </p>
             <pre className="docs-code">{`POST https://ada-kr-pos.com/api/sdk/verify-key
 Authorization: Bearer ak_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`}</pre>
             <p className="docs-response-label">성공 응답 (200):</p>
             <pre className="docs-code">{`{ "valid": true }`}</pre>
-            <p className="docs-response-label">실패 응답: <code>401</code> (API 키 누락/무효), <code>403</code> (API 키 비활성)</p>
+            <p className="docs-response-label">
+              실패 응답: <code>401</code> (API 키 누락/무효), <code>403</code>{" "}
+              (API 키 비활성)
+            </p>
           </div>
         </details>
 
@@ -713,25 +825,94 @@ Authorization: Bearer ak_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`}</pre>
           <div className="docs-content">
             <div className="docs-error-table">
               <div className="docs-error-row docs-error-header">
-                <span>코드</span><span>의미</span>
+                <span>코드</span>
+                <span>의미</span>
               </div>
               <div className="docs-error-row">
-                <code>401</code><span>API 키 누락 또는 유효하지 않음 — 키를 확인하세요</span>
+                <code>401</code>
+                <span>API 키 누락 또는 유효하지 않음 — 키를 확인하세요</span>
               </div>
               <div className="docs-error-row">
-                <code>403</code><span>API 키 비활성 상태 — 개발자 포털에서 키를 재발급하세요</span>
+                <code>403</code>
+                <span>
+                  API 키 비활성 상태 — 개발자 포털에서 키를 재발급하세요
+                </span>
               </div>
               <div className="docs-error-row">
-                <code>404</code><span>세션/사용자 없음 — 로그인 페이지로 리다이렉트하세요</span>
+                <code>404</code>
+                <span>세션/사용자 없음 — 로그인 페이지로 리다이렉트하세요</span>
               </div>
               <div className="docs-error-row">
-                <code>429</code><span>요청 한도 초과 — 잠시 후 재시도하세요</span>
+                <code>429</code>
+                <span>요청 한도 초과 — 잠시 후 재시도하세요</span>
               </div>
             </div>
-            <p>SDK는 <code>401</code>/<code>403</code> 응답을 받으면 해당 API 키를 30초간 무효로 캐시합니다. 키 교체 후 즉시 반영하려면 <code>clearApiKeyCache()</code>를 호출하세요:</p>
+            <p>
+              SDK는 <code>401</code>/<code>403</code> 응답을 받으면 해당 API
+              키를 30초간 무효로 캐시합니다. 키 교체 후 즉시 반영하려면{" "}
+              <code>clearApiKeyCache()</code>를 호출하세요:
+            </p>
             <pre className="docs-code">{`import { clearApiKeyCache } from "@adakrpos/auth";
 
 clearApiKeyCache(); // 캐시된 키 유효성 초기화`}</pre>
+          </div>
+        </details>
+
+        <details className="docs-group">
+          <summary className="docs-group-title">
+            로그인 리다이렉트 (callbackUrl)
+          </summary>
+          <div className="docs-content">
+            <p>
+              미인증 사용자를 로그인 페이지로 보낼 때 <code>callbackUrl</code>{" "}
+              파라미터를 사용하면 로그인 완료 후 원래 페이지로 자동
+              리다이렉트됩니다.
+            </p>
+            <pre className="docs-code">{`https://ada-kr-pos.com/login?callbackUrl=https://your-app.ada-kr-pos.com/current-page`}</pre>
+
+            <h4>보안 제한</h4>
+            <p>
+              Open Redirect 방지를 위해 <code>callbackUrl</code>은 아래 조건을
+              모두 만족해야 합니다:
+            </p>
+            <div className="docs-error-table">
+              <div className="docs-error-row docs-error-header">
+                <span>조건</span>
+                <span>설명</span>
+              </div>
+              <div className="docs-error-row">
+                <code>HTTPS</code>
+                <span>
+                  프로토콜이 <code>https://</code>여야 합니다
+                </span>
+              </div>
+              <div className="docs-error-row">
+                <code>도메인</code>
+                <span>
+                  <code>ada-kr-pos.com</code> 또는 <code>*.ada-kr-pos.com</code>
+                  만 허용
+                </span>
+              </div>
+            </div>
+            <p>
+              조건을 만족하지 않으면 <code>callbackUrl</code>은 무시되고{" "}
+              <code>/mypage</code>로 이동합니다.
+            </p>
+
+            <h4>예시</h4>
+            <pre className="docs-code">{`// 미인증 사용자를 로그인으로 보내기
+const loginUrl = new URL("https://ada-kr-pos.com/login");
+loginUrl.searchParams.set("callbackUrl", window.location.href);
+window.location.href = loginUrl.toString();
+
+// 결과: https://ada-kr-pos.com/login?callbackUrl=https%3A%2F%2Fyour-app.ada-kr-pos.com%2Fwrite`}</pre>
+
+            <h4>지원 범위</h4>
+            <p>
+              Apple 로그인, 매직링크(이메일) 모두 <code>callbackUrl</code>을
+              지원합니다. 이미 로그인된 상태에서 <code>callbackUrl</code>이
+              포함된 로그인 페이지에 접근하면 바로 해당 URL로 리다이렉트됩니다.
+            </p>
           </div>
         </details>
       </div>
