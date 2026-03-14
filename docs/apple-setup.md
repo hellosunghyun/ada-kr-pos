@@ -43,8 +43,8 @@ Services ID가 웹 OAuth 흐름에서 `client_id`로 사용됩니다. 이것이 
 5. **Sign In with Apple** 체크 ✅ → **Configure** 클릭
 6. 설정 창에서:
    - **Primary App ID**: Step 1에서 만든 App ID 선택
-   - **Domains and Subdomains**: `adapos.tech`
-   - **Return URLs**: `https://adapos.tech/api/auth/apple/callback`
+    - **Domains and Subdomains**: `ada-kr-pos.com`
+     - **Return URLs**: `https://ada-kr-pos.com/api/auth/apple/callback`
 7. Next → Done → Continue → Save
 
 > **주의**: Identifier(`tech.adapos.auth.service`)가 `APPLE_CLIENT_ID`입니다. App ID(`tech.adapos.auth`)가 아닙니다. 혼동하면 `invalid_client` 오류가 발생합니다.
@@ -159,7 +159,7 @@ ngrok이 제공하는 HTTPS URL(예: `https://xxxx.ngrok.io`)을 Apple Developer
 
 ### 옵션 2: 실제 배포 환경에서 테스트
 
-`adapos.tech`에 배포 후 테스트하는 것이 가장 안정적입니다. Cloudflare Pages는 PR마다 preview URL을 제공하므로 이를 활용할 수 있습니다. 단, preview URL도 Apple Developer Console에 등록해야 합니다.
+`ada-kr-pos.com`에 배포 후 테스트하는 것이 가장 안정적입니다. Cloudflare Pages는 PR마다 preview URL을 제공하므로 이를 활용할 수 있습니다. 단, preview URL도 Apple Developer Console에 등록해야 합니다.
 
 ---
 
