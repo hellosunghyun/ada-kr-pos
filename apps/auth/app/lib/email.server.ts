@@ -40,15 +40,15 @@ export async function sendVerificationEmail(
   toEmail: string,
   token: string
 ): Promise<void> {
-  const verifyUrl = `https://adapos.tech/api/verify/confirm?token=${token}&email=${encodeURIComponent(toEmail)}`;
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${resendApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: "noreply@adapos.tech",
+   const verifyUrl = `https://ada-kr-pos.com/api/verify/confirm?token=${token}&email=${encodeURIComponent(toEmail)}`;
+   const response = await fetch("https://api.resend.com/emails", {
+     method: "POST",
+     headers: {
+       Authorization: `Bearer ${resendApiKey}`,
+       "Content-Type": "application/json",
+     },
+     body: JSON.stringify({
+       from: "noreply@ada-kr-pos.com",
       to: toEmail,
       subject: "ADA Auth — 이메일 인증",
       html: `<p>인증 링크: <a href="${verifyUrl}">인증하기</a></p>`,

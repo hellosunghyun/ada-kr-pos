@@ -42,7 +42,7 @@ export async function exchangeAuthorizationCode(
     client_secret: clientSecret,
     code,
     grant_type: "authorization_code",
-    redirect_uri: "https://adapos.tech/api/auth/apple/callback",
+    redirect_uri: "https://ada-kr-pos.com/api/auth/apple/callback",
   });
 
   const response = await fetch(APPLE_TOKEN_URL, {

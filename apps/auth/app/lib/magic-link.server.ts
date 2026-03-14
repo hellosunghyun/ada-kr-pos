@@ -46,15 +46,15 @@ export async function sendMagicLink(
     }
   );
 
-  const verifyUrl = `https://adapos.tech/api/auth/magic/verify?token=${token}`;
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${resendApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: "noreply@adapos.tech",
+   const verifyUrl = `https://ada-kr-pos.com/api/auth/magic/verify?token=${token}`;
+   const response = await fetch("https://api.resend.com/emails", {
+     method: "POST",
+     headers: {
+       Authorization: `Bearer ${resendApiKey}`,
+       "Content-Type": "application/json",
+     },
+     body: JSON.stringify({
+       from: "noreply@ada-kr-pos.com",
       to: normalizedEmail,
       subject: "ADA Auth — 매직 링크 로그인",
       html: `<p>로그인 링크: <a href="${verifyUrl}">로그인하기</a></p>`,

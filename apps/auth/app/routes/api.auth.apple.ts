@@ -11,7 +11,7 @@ export async function loader({ context }: LoaderFunctionArgs) {
     expirationTtl: 300,
   });
 
-  const redirectUri = "https://adapos.tech/api/auth/apple/callback";
+   const redirectUri = "https://ada-kr-pos.com/api/auth/apple/callback";
   const appleUrl = buildAppleAuthUrl(env.APPLE_CLIENT_ID, redirectUri, state, nonce);
 
   return redirect(appleUrl);
