@@ -67,13 +67,69 @@ export async function action({ request, context }: ActionFunctionArgs): Promise<
   return { user: updated, success: true };
 }
 
+function VerifyEmailGate() {
+  const verifyFetcher = useFetcher<{ success?: boolean; error?: string }>();
+  const isVerifying = verifyFetcher.state !== "idle";
+  const verifyResult = verifyFetcher.data;
+
+  return (
+    <div className="verification-required">
+      <h1>구성원 인증이 필요합니다</h1>
+      <p>서비스를 이용하려면 아카데미 이메일(@pos.idserve.net)을 인증해주세요.</p>
+
+      <verifyFetcher.Form method="post" action="/api/verify/send" className="verify-form" style={{ maxWidth: 360, margin: "0 auto" }}>
+        <input
+          type="email"
+          name="email"
+          placeholder="your@pos.idserve.net"
+          required
+          pattern="^[^@]+@pos\.idserve\.net$"
+          title="@pos.idserve.net 이메일만 사용할 수 있습니다."
+          className="form-input"
+          style={{ fontSize: "var(--text-base)" }}
+        />
+        <button type="submit" className="btn btn-primary" disabled={isVerifying} style={{ width: "100%", marginTop: "var(--space-3)" }}>
+          {isVerifying ? "전송 중..." : "인증 이메일 전송"}
+        </button>
+      </verifyFetcher.Form>
+
+      {verifyResult?.success && (
+        <p className="success-msg" style={{ marginTop: "var(--space-6)" }}>
+          인증 이메일을 발송했습니다. 메일함을 확인해주세요.
+        </p>
+      )}
+      {verifyResult?.error && (
+        <p className="error-msg" style={{ marginTop: "var(--space-6)" }}>
+          {verifyResult.error}
+        </p>
+      )}
+
+      <Form method="post" action="/api/auth/logout" style={{ marginTop: "var(--space-10)" }}>
+        <button type="submit" className="btn-secondary" style={{
+          padding: "var(--space-2) var(--space-4)",
+          background: "transparent",
+          color: "var(--color-text-secondary)",
+          border: "1px solid var(--color-border-strong)",
+          borderRadius: "var(--radius-md)",
+          fontSize: "var(--text-sm)",
+          cursor: "pointer",
+          fontFamily: "inherit",
+        }}>
+          로그아웃
+        </button>
+      </Form>
+    </div>
+  );
+}
+
 export default function MyPage() {
   const { user } = useLoaderData<typeof loader>();
   const actionData = useActionData<ActionData>();
   const displayUser = actionData?.user ?? user;
-  const verifyFetcher = useFetcher<{ success?: boolean; error?: string }>();
-  const isVerifying = verifyFetcher.state !== "idle";
-  const verifyResult = verifyFetcher.data;
+
+  if (!displayUser.isVerified) {
+    return <VerifyEmailGate />;
+  }
 
   return (
     <div className="mypage-container">
@@ -104,31 +160,7 @@ export default function MyPage() {
         <div className="profile-info">
           <h1>{displayUser.nickname || displayUser.name || "이름 없음"}</h1>
           <p className="profile-email">{displayUser.verifiedEmail || displayUser.email}</p>
-          {displayUser.isVerified ? (
-            <span className="verified-badge">✓ 구성원 인증 완료</span>
-          ) : (
-            <>
-              <verifyFetcher.Form method="post" action="/api/verify/send" className="verify-form">
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="your@pos.idserve.net"
-                  required
-                  pattern="^[^@]+@pos\.idserve\.net$"
-                  title="@pos.idserve.net 이메일만 사용할 수 있습니다."
-                />
-                <button type="submit" className="verify-btn" disabled={isVerifying}>
-                  {isVerifying ? "전송 중..." : "이메일 인증하기"}
-                </button>
-              </verifyFetcher.Form>
-              {verifyResult?.success && (
-                <p className="success-msg">인증 이메일을 발송했습니다. 메일함을 확인해주세요.</p>
-              )}
-              {verifyResult?.error && (
-                <p className="error-msg">{verifyResult.error}</p>
-              )}
-            </>
-          )}
+          <span className="verified-badge">✓ 구성원 인증 완료</span>
         </div>
       </div>
 
