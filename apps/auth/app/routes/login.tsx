@@ -58,7 +58,7 @@ export default function Login() {
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 17 20"
-            width="18"
+            width="15"
             height="18"
             fill="currentColor"
             aria-hidden="true"
