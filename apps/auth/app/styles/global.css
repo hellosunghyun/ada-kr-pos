@@ -509,9 +509,15 @@ textarea.form-input {
 
 .login-card > p {
   color: var(--color-text-secondary);
-  margin-bottom: var(--space-8);
+  margin-bottom: var(--space-2);
   font-size: var(--text-base);
   letter-spacing: -0.022em;
+}
+
+.unofficial-notice {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  margin-bottom: var(--space-8);
 }
 
 .apple-signin-btn {
