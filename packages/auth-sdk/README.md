@@ -212,7 +212,19 @@ Log in at [ada-kr-pos.com](https://ada-kr-pos.com) with your @pos.idserve.net em
 No. API keys must stay server-side only. Never expose your API key in browser code.
 
 **Q: What happens when a session expires?**
-`auth.isAuthenticated` will be `false`. Redirect the user to `https://ada-kr-pos.com/login`.
+`auth.isAuthenticated` will be `false`. Redirect the user to login with `callbackUrl` so they return to the current page after authentication:
+
+```typescript
+// Hono example
+if (!auth.isAuthenticated) {
+  const currentUrl = new URL(c.req.url);
+  const loginUrl = new URL("https://ada-kr-pos.com/login");
+  loginUrl.searchParams.set("callbackUrl", currentUrl.toString());
+  return c.redirect(loginUrl.toString());
+}
+```
+
+`callbackUrl` must be `https://` and under `*.ada-kr-pos.com` — other domains are ignored for security. See [docs/callback-url.md](../../docs/callback-url.md) for details.
 
 **Q: Does this work with Cloudflare Workers?**
 Yes. Use `@adakrpos/auth/generic` with `verifyRequest`, or `@adakrpos/auth/hono` if you're using Hono.
