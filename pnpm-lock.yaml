@@ -76,7 +76,7 @@ importers:
         specifier: ^4.1.0
         version: 4.1.0(vite@6.4.1)
       wrangler:
-        specifier: ^4.0.0
+        specifier: ^4.73.0
         version: 4.73.0(@cloudflare/workers-types@4.20260313.1)
 
   packages/auth-sdk:
