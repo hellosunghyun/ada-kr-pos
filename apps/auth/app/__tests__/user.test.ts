@@ -16,6 +16,7 @@ import { loader as meLoader, action as meAction } from "~/routes/api.me";
 const USERS_TABLE_SQL = `
   CREATE TABLE users (
     id text PRIMARY KEY NOT NULL,
+    apple_sub text,
     apple_email text,
     verified_email text,
     nickname text,

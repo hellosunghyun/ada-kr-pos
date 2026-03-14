@@ -82,6 +82,11 @@ export async function getUserById(db: Db, userId: string): Promise<AdaposUser | 
   return row ? mapUser(row) : null;
 }
 
+export async function getUserByAppleSub(db: Db, appleSub: string): Promise<AdaposUser | null> {
+  const row = await db.select().from(users).where(eq(users.appleSub, appleSub)).get();
+  return row ? mapUser(row) : null;
+}
+
 export async function getUserByEmail(db: Db, email: string): Promise<AdaposUser | null> {
   const row = await db.select().from(users).where(eq(users.appleEmail, email)).get();
   return row ? mapUser(row) : null;
@@ -145,6 +150,24 @@ export async function verifyUserEmail(db: Db, userId: string, verifiedEmail: str
   return getRequiredUserById(db, userId);
 }
 
+export async function linkAppleAccount(
+  db: Db,
+  userId: string,
+  appleSub: string,
+  appleEmail?: string
+): Promise<AdaposUser> {
+  await db
+    .update(users)
+    .set({
+      appleSub: appleSub,
+      appleEmail: appleEmail ?? null,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId));
+
+  return getRequiredUserById(db, userId);
+}
+
 export async function findOrCreateUser(
   db: Db,
   data: {
@@ -154,22 +177,20 @@ export async function findOrCreateUser(
   }
 ): Promise<AdaposUser> {
   const existingById = await getUserById(db, data.id);
-  if (existingById) {
-    return existingById;
-  }
+  if (existingById) return existingById;
+
+  const existingByAppleSub = await getUserByAppleSub(db, data.id);
+  if (existingByAppleSub) return existingByAppleSub;
 
   if (data.appleEmail) {
     const existingByEmail = await getUserByEmail(db, data.appleEmail);
-    if (existingByEmail) {
-      return existingByEmail;
-    }
+    if (existingByEmail) return existingByEmail;
 
     const existingByVerifiedEmail = await getUserByVerifiedEmail(db, data.appleEmail);
     if (existingByVerifiedEmail) {
-      // Magic link user exists with same email → link Apple identity
       await db
         .update(users)
-        .set({ appleEmail: data.appleEmail, updatedAt: new Date() })
+        .set({ appleSub: data.id, appleEmail: data.appleEmail, updatedAt: new Date() })
         .where(eq(users.id, existingByVerifiedEmail.id));
       return getRequiredUserById(db, existingByVerifiedEmail.id);
     }

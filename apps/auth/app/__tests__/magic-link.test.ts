@@ -13,6 +13,7 @@ import type { Env } from "~/types/env";
 const USERS_TABLE_SQL = `
   CREATE TABLE users (
     id text PRIMARY KEY NOT NULL,
+    apple_sub text,
     apple_email text,
     verified_email text,
     nickname text,

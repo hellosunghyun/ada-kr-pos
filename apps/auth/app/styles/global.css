@@ -681,6 +681,33 @@ textarea.form-input {
   letter-spacing: -0.01em;
 }
 
+.apple-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  background: #000000;
+  color: #FFFFFF;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  transition: opacity var(--transition-fast);
+}
+
+.apple-link-btn:hover {
+  opacity: 0.85;
+}
+
+@media (prefers-color-scheme: dark) {
+  .apple-link-btn {
+    background: #FFFFFF;
+    color: #000000;
+  }
+}
+
 .verify-form {
   display: flex;
   flex-direction: column;

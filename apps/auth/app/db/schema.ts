@@ -1,7 +1,8 @@
 import { text, integer, sqliteTable } from "drizzle-orm/sqlite-core";
 
 export const users = sqliteTable("users", {
-  id: text("id").primaryKey(), // Apple sub (or "magic_{uuid}" for magic link users)
+  id: text("id").primaryKey(),
+  appleSub: text("apple_sub"),
   appleEmail: text("apple_email"),
   verifiedEmail: text("verified_email"), // pos.idserve.net email (after verification)
   nickname: text("nickname"),

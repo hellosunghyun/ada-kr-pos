@@ -161,6 +161,14 @@ export default function MyPage() {
           <h1>{displayUser.nickname || displayUser.name || "이름 없음"}</h1>
           <p className="profile-email">{displayUser.verifiedEmail || displayUser.email}</p>
           <span className="verified-badge">✓ 구성원 인증 완료</span>
+          {!displayUser.email && (
+            <a href="/api/auth/apple?link=true" className="apple-link-btn">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 17 20" width="13" height="15" fill="currentColor" aria-hidden="true">
+                <path d="M12.57 5.3c-.82.95-2.15 1.7-3.46 1.58-.17-1.33.49-2.72 1.24-3.59C11.17 2.33 12.6 1.62 13.76 1.5c.14 1.4-.41 2.77-1.19 3.8zM13.74 7.03c-1.9-.11-3.53 1.08-4.43 1.08-.92 0-2.3-1.02-3.82-1-1.97.03-3.78 1.14-4.79 2.9-2.05 3.54-.53 8.78 1.45 11.66.98 1.42 2.14 3 3.67 2.94 1.46-.06 2.03-.95 3.8-.95 1.76 0 2.28.95 3.82.92 1.59-.03 2.58-1.44 3.55-2.87 1.12-1.63 1.58-3.21 1.6-3.3-.03-.01-3.08-1.19-3.11-4.7-.03-2.94 2.4-4.35 2.51-4.42-1.37-2.03-3.52-2.26-4.25-2.26z" />
+              </svg>
+              Apple 계정 연결하기
+            </a>
+          )}
         </div>
       </div>
 

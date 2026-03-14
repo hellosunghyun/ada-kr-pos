@@ -4,7 +4,7 @@ import { createDb } from "~/db/index";
 import { exchangeAuthorizationCode, verifyIdToken } from "~/lib/apple.server";
 import { setSessionCookie } from "~/lib/cookie.server";
 import { createSession } from "~/lib/session.server";
-import { findOrCreateUser } from "~/lib/user.server";
+import { findOrCreateUser, linkAppleAccount } from "~/lib/user.server";
 import type { Env } from "~/types/env";
 
 export async function action({ request, context }: ActionFunctionArgs) {
@@ -40,6 +40,13 @@ export async function action({ request, context }: ActionFunctionArgs) {
     const { idToken } = await exchangeAuthorizationCode(code, env);
     const { sub, email } = await verifyIdToken(idToken, env.APPLE_CLIENT_ID);
     const db = createDb(env.DB);
+    const parsed = JSON.parse(storedState) as { nonce: string; linkUserId?: string };
+
+    if (parsed.linkUserId) {
+      await linkAppleAccount(db, parsed.linkUserId, sub, email ?? undefined);
+      return redirect("/mypage");
+    }
+
     const user = await findOrCreateUser(db, { id: sub, appleEmail: email ?? undefined });
     const { sessionId, expiresAt } = await createSession(env.SESSIONS, user.id);
     const cookieValue = setSessionCookie(sessionId, expiresAt, env.COOKIE_DOMAIN);
