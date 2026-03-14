@@ -103,7 +103,7 @@ export default function MyPage() {
         </div>
         <div className="profile-info">
           <h1>{displayUser.nickname || displayUser.name || "이름 없음"}</h1>
-          <p className="profile-email">{displayUser.email || displayUser.verifiedEmail}</p>
+          <p className="profile-email">{displayUser.verifiedEmail || displayUser.email}</p>
           {displayUser.isVerified ? (
             <span className="verified-badge">✓ 구성원 인증 완료</span>
           ) : (
