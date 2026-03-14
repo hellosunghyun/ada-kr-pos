@@ -19,7 +19,7 @@ export const links: LinksFunction = () => [
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const cookieHeader = request.headers.get("Cookie") ?? "";
-  const isAuthenticated = cookieHeader.includes("session=");
+  const isAuthenticated = cookieHeader.includes("adakrpos_session=");
   return { isAuthenticated };
 }
 
