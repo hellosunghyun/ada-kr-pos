@@ -8,3 +8,4 @@ build
 .wrangler
 .dev.vars
 *.p8
+login-page.png

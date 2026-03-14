@@ -1,4 +1,4 @@
-import { Form, useLoaderData, useActionData } from "react-router";
+import { Form, useLoaderData, useActionData, useFetcher } from "react-router";
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
 import { requireAuthPage } from "~/middleware/auth.server";
 import { validateCsrf } from "~/middleware/csrf.server";
@@ -71,6 +71,9 @@ export default function MyPage() {
   const { user } = useLoaderData<typeof loader>();
   const actionData = useActionData<ActionData>();
   const displayUser = actionData?.user ?? user;
+  const verifyFetcher = useFetcher<{ success?: boolean; error?: string }>();
+  const isVerifying = verifyFetcher.state !== "idle";
+  const verifyResult = verifyFetcher.data;
 
   return (
     <div className="mypage-container">
@@ -104,19 +107,27 @@ export default function MyPage() {
           {displayUser.isVerified ? (
             <span className="verified-badge">✓ 구성원 인증 완료</span>
           ) : (
-            <Form method="post" action="/api/verify/send" className="verify-form">
-              <input
-                type="email"
-                name="email"
-                placeholder="your@pos.idserve.net"
-                required
-                pattern="^[^@]+@pos\.idserve\.net$"
-                title="@pos.idserve.net 이메일만 사용할 수 있습니다."
-              />
-              <button type="submit" className="verify-btn">
-                이메일 인증하기
-              </button>
-            </Form>
+            <>
+              <verifyFetcher.Form method="post" action="/api/verify/send" className="verify-form">
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="your@pos.idserve.net"
+                  required
+                  pattern="^[^@]+@pos\.idserve\.net$"
+                  title="@pos.idserve.net 이메일만 사용할 수 있습니다."
+                />
+                <button type="submit" className="verify-btn" disabled={isVerifying}>
+                  {isVerifying ? "전송 중..." : "이메일 인증하기"}
+                </button>
+              </verifyFetcher.Form>
+              {verifyResult?.success && (
+                <p className="success-msg">인증 이메일을 발송했습니다. 메일함을 확인해주세요.</p>
+              )}
+              {verifyResult?.error && (
+                <p className="error-msg">{verifyResult.error}</p>
+              )}
+            </>
           )}
         </div>
       </div>

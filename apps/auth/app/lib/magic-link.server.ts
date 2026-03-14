@@ -1,7 +1,8 @@
+import { eq } from "drizzle-orm";
 import { createDb } from "~/db/index";
 import { users } from "~/db/schema";
 import { createSession } from "~/lib/session.server";
-import { getUserByVerifiedEmail } from "~/lib/user.server";
+import { getUserByEmail, getUserByVerifiedEmail } from "~/lib/user.server";
 
 const MAGIC_TOKEN_TTL_SECONDS = 15 * 60;
 const MAGIC_KEY_PREFIX = "magic:";
@@ -88,7 +89,8 @@ export async function verifyMagicLink(
     throw new Error("Invalid or expired magic link token");
   }
 
-  const existingUser = await getUserByVerifiedEmail(db, email);
+  const existingUser =
+    (await getUserByVerifiedEmail(db, email)) ?? (await getUserByEmail(db, email));
   const userId = existingUser?.id ?? `magic_${crypto.randomUUID()}`;
 
   if (!existingUser) {
@@ -101,6 +103,11 @@ export async function verifyMagicLink(
       updatedAt: now,
       snsLinks: JSON.stringify({}),
     });
+  } else if (!existingUser.verifiedEmail) {
+    await db
+      .update(users)
+      .set({ verifiedEmail: email, isVerified: true, updatedAt: new Date() })
+      .where(eq(users.id, existingUser.id));
   }
 
   const { sessionId, expiresAt } = await createSession(sessionKv, userId);

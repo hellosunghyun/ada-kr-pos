@@ -156,6 +156,29 @@ describe("User CRUD", () => {
     expect(rowCount?.count).toBe(1);
   });
 
+  it("findOrCreateUser merges into magic link user when verifiedEmail matches appleEmail", async () => {
+    const now = new Date();
+    await bindings.DB.prepare(
+      "INSERT INTO users (id, verified_email, is_verified, created_at, updated_at, sns_links) VALUES (?, ?, 1, ?, ?, '{}')"
+    )
+      .bind("magic_existing", "shared@pos.idserve.net", now.getTime(), now.getTime())
+      .run();
+
+    const user = await findOrCreateUser(db, {
+      id: "apple-sub-merge",
+      appleEmail: "shared@pos.idserve.net",
+    });
+
+    const rowCount = await bindings.DB.prepare("SELECT COUNT(*) AS count FROM users").first<{ count: number }>();
+    const row = await bindings.DB.prepare("SELECT apple_email FROM users WHERE id = ?")
+      .bind("magic_existing")
+      .first<{ apple_email: string | null }>();
+
+    expect(user.id).toBe("magic_existing");
+    expect(row?.apple_email).toBe("shared@pos.idserve.net");
+    expect(rowCount?.count).toBe(1);
+  });
+
   it("findOrCreateUser creates and returns a new user when one does not exist", async () => {
     const user = await findOrCreateUser(db, {
       id: "apple-sub-new",

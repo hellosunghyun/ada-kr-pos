@@ -166,7 +166,12 @@ export async function findOrCreateUser(
 
     const existingByVerifiedEmail = await getUserByVerifiedEmail(db, data.appleEmail);
     if (existingByVerifiedEmail) {
-      return existingByVerifiedEmail;
+      // Magic link user exists with same email → link Apple identity
+      await db
+        .update(users)
+        .set({ appleEmail: data.appleEmail, updatedAt: new Date() })
+        .where(eq(users.id, existingByVerifiedEmail.id));
+      return getRequiredUserById(db, existingByVerifiedEmail.id);
     }
   }
 

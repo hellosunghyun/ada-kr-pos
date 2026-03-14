@@ -170,6 +170,34 @@ describe("Magic link login", () => {
     expect(count?.count).toBe(1);
   });
 
+  it("verifyMagicLink merges into Apple user when appleEmail matches", async () => {
+    const now = new Date();
+    await db.insert(users).values({
+      id: "apple-sub-merge",
+      appleEmail: "member@pos.idserve.net",
+      isVerified: false,
+      createdAt: now,
+      updatedAt: now,
+      snsLinks: JSON.stringify({}),
+    });
+
+    const token = crypto.randomUUID();
+    await bindings.MAGIC_TOKENS.put(
+      `magic:${token}`,
+      JSON.stringify({ email: "member@pos.idserve.net", createdAt: Date.now() }),
+      { expirationTtl: 900 }
+    );
+
+    const result = await verifyMagicLink(bindings.MAGIC_TOKENS, db, token, bindings.SESSIONS);
+    const user = await getUserById(db, "apple-sub-merge");
+    const count = await bindings.DB.prepare("SELECT COUNT(*) AS count FROM users").first<{ count: number }>();
+
+    expect(result.userId).toBe("apple-sub-merge");
+    expect(user?.verifiedEmail).toBe("member@pos.idserve.net");
+    expect(user?.isVerified).toBe(true);
+    expect(count?.count).toBe(1);
+  });
+
   it("POST /api/auth/magic/send with gmail.com returns 400", async () => {
     const request = new Request("https://example.com/api/auth/magic/send", {
       method: "POST",
