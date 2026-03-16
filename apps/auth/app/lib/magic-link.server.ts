@@ -65,6 +65,10 @@ export async function sendMagicLink(
   });
 
   if (!response.ok) {
+    const body = await response.text().catch(() => "unable to read body");
+    console.error(
+      `[magic-link] Resend API error: status=${response.status} body=${body}`,
+    );
     throw new Error(`Failed to send magic link email: ${response.status}`);
   }
 }

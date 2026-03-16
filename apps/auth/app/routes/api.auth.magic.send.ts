@@ -40,7 +40,11 @@ export async function action({ request, context }: ActionFunctionArgs) {
       return Response.json({ error: error.message }, { status: 400 });
     }
 
-    throw error;
+    console.error("[magic/send] Failed to send magic link:", error);
+    return Response.json(
+      { error: "이메일 전송에 실패했습니다." },
+      { status: 500 },
+    );
   }
 
   return Response.json({
