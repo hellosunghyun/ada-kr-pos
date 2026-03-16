@@ -4,6 +4,7 @@ import {
   sendVerificationEmail,
   storeVerificationToken,
 } from "~/lib/email.server";
+import { createLogger, maskEmail } from "~/lib/logger.server";
 import { requireAuthApi } from "~/middleware/auth.server";
 import { validateCsrf } from "~/middleware/csrf.server";
 import type { Env } from "~/types/env";
@@ -20,12 +21,15 @@ export async function action({ request, context }: ActionFunctionArgs) {
   await validateCsrf(request);
   await requireAuthApi(request, context);
 
+  const { logger = createLogger() } = context;
+
   const contentType = request.headers.get("Content-Type") ?? "";
 
   let email = "";
   if (contentType.includes("application/json")) {
     const body = (await request.json()) as { email?: unknown };
-    email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    email =
+      typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
   } else {
     const formData = await request.formData();
     const rawEmail = formData.get("email");
@@ -43,8 +47,17 @@ export async function action({ request, context }: ActionFunctionArgs) {
   const env = (context as any).cloudflare.env as Env;
   const token = generateVerificationToken();
 
+  logger.info("Email verification requested", {
+    userId: (context as any).user?.id,
+    email: maskEmail(email),
+  });
+
   await storeVerificationToken(env.EMAIL_TOKENS, email, token);
   await sendVerificationEmail(env.RESEND_API_KEY, email, token);
+
+  logger.info("Verification email dispatched", {
+    userId: (context as any).user?.id,
+  });
 
   return Response.json({
     success: true,
