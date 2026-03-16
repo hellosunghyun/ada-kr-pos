@@ -11,6 +11,9 @@ const requestHandler = createRequestHandler(
   import.meta.env.MODE,
 );
 
+// Logging: Every request (except /api/health) is logged as structured JSON to Cloudflare Workers Logs.
+// Each entry includes requestId (UUID), method, path, status, duration. LOG_LEVEL env var controls
+// verbosity (default: "info"). See apps/auth/app/lib/logger.server.ts for full conventions.
 export default {
   async fetch(request, env, ctx) {
     const requestId = crypto.randomUUID();

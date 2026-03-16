@@ -1,3 +1,48 @@
+/**
+ * Logging System — ADA Auth Server
+ *
+ * OVERVIEW
+ * Structured JSON logging to Cloudflare Workers Logs (console.log → Workers dashboard).
+ * Every log entry: { level, message, timestamp, requestId?, ...meta }
+ *
+ * LOG LEVELS
+ * - debug: Dev/trace info, internals (cache hits, session lookups)
+ * - info:  Normal operations (auth success, session create, profile update)
+ * - warn:  Security events and anomalies (auth fail, rate limit, CSRF, key regen, slow API)
+ * - error: Unexpected failures (uncaught errors, external API errors)
+ *
+ * REQUIRED FIELDS
+ * Every entry must have: level, message, timestamp (ISO 8601), requestId (when in request scope)
+ *
+ * MASKING RULES (MANDATORY)
+ * - API keys:     maskApiKey()       → first 11 chars + "..."
+ * - Session IDs:  maskSessionId()    → first 8 chars + "..."
+ * - Emails:       maskEmail()        → u***@domain.com
+ * - Secrets:      maskSecret()       → [REDACTED]
+ * - Auth headers: maskAuthHeader()   → Bearer [MASKED]
+ * - null/empty:                      → [EMPTY]
+ *
+ * NAMING CONVENTION
+ * Messages use "Subject verb" format: "Session created", "User logged out",
+ * "Rate limit exceeded", "Apple token exchange"
+ *
+ * SECURITY EVENTS (always warn level)
+ * Auth failures, rate limit exceeded, CSRF validation failed,
+ * API key regenerated, callback URL rejected
+ *
+ * PERFORMANCE EVENTS
+ * External API calls (Apple OAuth, Resend): log duration in ms
+ * Slow threshold: > 2000ms → warn level
+ *
+ * NEVER LOG
+ * Request/response bodies, full secrets (APPLE_PRIVATE_KEY, RESEND_API_KEY, AUTH_SECRET),
+ * verification tokens, full cookie values, health check requests (at info level)
+ *
+ * USAGE
+ * Route handlers: const { logger } = context; → logger.info("message", meta)
+ * Lib functions:  import { log } from "~/lib/logger.server"; → log("info", "message", meta)
+ * SDK:            new AdakrposLogFn callback in config → zero output if not provided
+ */
 import { AppError } from "~/lib/error.server";
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
