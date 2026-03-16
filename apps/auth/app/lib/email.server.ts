@@ -57,6 +57,7 @@ export async function sendVerificationEmail(
   });
 
   const verifyUrl = `https://ada-kr-pos.com/api/verify/confirm?token=${token}&email=${encodeURIComponent(toEmail)}`;
+  const start = Date.now();
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -70,6 +71,7 @@ export async function sendVerificationEmail(
       html: `<p>인증 링크: <a href="${verifyUrl}">인증하기</a></p>`,
     }),
   });
+  const duration = Date.now() - start;
 
   if (!response.ok) {
     log("error", "Verification email send failed", {
@@ -79,5 +81,12 @@ export async function sendVerificationEmail(
     throw new Error(`Failed to send verification email: ${response.status}`);
   }
 
-  log("info", "Verification email sent", { email: maskEmail(toEmail) });
+  log("info", "Resend API: verification email sent", {
+    duration,
+    status: response.status,
+    email: maskEmail(toEmail),
+  });
+  if (duration > 2000) {
+    log("warn", "Resend API slow", { service: "resend", duration });
+  }
 }

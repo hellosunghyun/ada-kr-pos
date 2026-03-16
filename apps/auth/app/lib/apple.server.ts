@@ -48,6 +48,7 @@ export async function exchangeAuthorizationCode(
     redirect_uri: "https://ada-kr-pos.com/api/auth/apple/callback",
   });
 
+  const start = Date.now();
   const response = await fetch(APPLE_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -56,6 +57,11 @@ export async function exchangeAuthorizationCode(
     log("error", "Apple token exchange failed", { error });
     throw error;
   });
+  const duration = Date.now() - start;
+  log("info", "Apple token exchange", { duration, status: response.status });
+  if (duration > 2000) {
+    log("warn", "Apple token exchange slow", { duration, threshold: 2000 });
+  }
 
   if (!response.ok) {
     const error = await response.text();
@@ -81,6 +87,7 @@ export async function verifyIdToken(
   idToken: string,
   clientId: string,
 ): Promise<{ sub: string; email?: string; emailVerified?: boolean }> {
+  const cached = appleJwks !== null;
   const { payload } = await jwtVerify(idToken, getAppleJwks(), {
     issuer: APPLE_ISSUER,
     audience: clientId,
@@ -91,6 +98,7 @@ export async function verifyIdToken(
 
   const sub = payload.sub as string;
 
+  log("info", "Apple JWT verification", { cached });
   log("info", "Apple ID token verified", { sub });
 
   return {

@@ -55,6 +55,7 @@ export async function sendMagicLink(
   });
 
   const verifyUrl = `https://ada-kr-pos.com/api/auth/magic/verify?token=${token}`;
+  const start = Date.now();
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -68,6 +69,7 @@ export async function sendMagicLink(
       html: `<p>로그인 링크: <a href="${verifyUrl}">로그인하기</a></p>`,
     }),
   });
+  const duration = Date.now() - start;
 
   if (!response.ok) {
     const body = await response.text().catch(() => "unable to read body");
@@ -80,9 +82,14 @@ export async function sendMagicLink(
     throw new Error(`Failed to send magic link email: ${response.status}`);
   }
 
-  log("info", "Magic link email sent", {
+  log("info", "Resend API: magic link email sent", {
+    duration,
+    status: response.status,
     email: maskEmail(normalizedEmail),
   });
+  if (duration > 2000) {
+    log("warn", "Resend API slow", { service: "resend", duration });
+  }
 }
 
 export async function verifyMagicLink(
