@@ -10,8 +10,8 @@ import type { AppLoadContext } from "react-router";
 import { createDb } from "~/db/index";
 import { users } from "~/db/schema";
 import { getSessionIdFromCookie } from "~/lib/cookie.server";
+import { log } from "~/lib/logger.server";
 import { getSession } from "~/lib/session.server";
-import type { Env } from "~/types/env";
 
 async function getUserById(
   db: ReturnType<typeof createDb>,
@@ -29,7 +29,8 @@ async function getUserById(
     let snsLinks: Record<string, string> = {};
     try {
       snsLinks = user.snsLinks ? JSON.parse(user.snsLinks) : {};
-    } catch {
+    } catch (error) {
+      log("debug", "Auth context resolution error", { error });
       snsLinks = {};
     }
 
@@ -48,7 +49,8 @@ async function getUserById(
       createdAt: user.createdAt.getTime(),
       updatedAt: user.updatedAt.getTime(),
     };
-  } catch {
+  } catch (error) {
+    log("debug", "Auth context resolution error", { error });
     return null;
   }
 }
@@ -57,7 +59,9 @@ async function getAuthContext(
   request: Request,
   context: AppLoadContext,
 ): Promise<AuthContext> {
-  const env = (context as any).cloudflare.env as Env;
+  log("debug", "Auth context: resolving session");
+
+  const env = context.cloudflare.env;
   const kv = env.SESSIONS;
   const db = createDb(env.DB);
 
@@ -65,6 +69,8 @@ async function getAuthContext(
   const sessionId = getSessionIdFromCookie(cookieHeader);
 
   if (!sessionId) {
+    log("debug", "Auth context: no session found");
+
     return {
       user: null,
       session: null,
@@ -75,6 +81,8 @@ async function getAuthContext(
   const session = await getSession(kv, sessionId);
 
   if (!session) {
+    log("debug", "Auth context: no session found");
+
     return {
       user: null,
       session: null,
@@ -91,6 +99,8 @@ async function getAuthContext(
       isAuthenticated: false,
     } as AdakrposUnauthContext;
   }
+
+  log("info", "Auth context: session validated", { userId: session.userId });
 
   return {
     user,
@@ -113,6 +123,9 @@ export async function requireAuthPage(
   if (!authContext.isAuthenticated) {
     const url = new URL(request.url);
     const currentPath = url.pathname + url.search;
+    log("warn", "Auth required for page: redirecting to login", {
+      path: currentPath,
+    });
     const loginUrl =
       currentPath === "/mypage"
         ? "/login"
@@ -130,6 +143,8 @@ export async function requireAuthApi(
   const authContext = await getAuthContext(request, context);
 
   if (!authContext.isAuthenticated) {
+    log("warn", "Auth required for API: returning 401");
+
     throw new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },

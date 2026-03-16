@@ -1,3 +1,5 @@
+import { log, maskSessionId } from "~/lib/logger.server";
+
 const SESSION_TTL_SECONDS = 7 * 24 * 60 * 60;
 const SESSION_KEY_PREFIX = "session:";
 
@@ -9,7 +11,7 @@ export interface Session {
 
 export async function createSession(
   kv: KVNamespace,
-  userId: string
+  userId: string,
 ): Promise<{ sessionId: string; expiresAt: number }> {
   const sessionId = crypto.randomUUID();
   const now = Date.now();
@@ -25,17 +27,33 @@ export async function createSession(
     expirationTtl: SESSION_TTL_SECONDS,
   });
 
+  log("info", "Session created", {
+    userId,
+    sessionId: maskSessionId(sessionId),
+    ttlSeconds: SESSION_TTL_SECONDS,
+  });
+
   return { sessionId, expiresAt };
 }
 
 export async function getSession(
   kv: KVNamespace,
-  sessionId: string
+  sessionId: string,
 ): Promise<Session | null> {
+  log("debug", "Session lookup", {
+    sessionId: maskSessionId(sessionId),
+  });
+
   const key = `${SESSION_KEY_PREFIX}${sessionId}`;
   const raw = await kv.get(key);
 
-  if (!raw) return null;
+  if (!raw) {
+    log("debug", "Session not found", {
+      sessionId: maskSessionId(sessionId),
+    });
+
+    return null;
+  }
 
   const session = JSON.parse(raw) as Session;
   const now = Date.now();
@@ -53,39 +71,57 @@ export async function getSession(
       expirationTtl: SESSION_TTL_SECONDS,
     });
 
+    log("info", "Session extended", {
+      userId: session.userId,
+      sessionId: maskSessionId(sessionId),
+    });
+
     return newSession;
   }
+
+  log("debug", "Session retrieved", {
+    userId: session.userId,
+  });
 
   return session;
 }
 
 export async function deleteSession(
   kv: KVNamespace,
-  sessionId: string
+  sessionId: string,
 ): Promise<void> {
   await kv.delete(`${SESSION_KEY_PREFIX}${sessionId}`);
+
+  log("info", "Session deleted", {
+    sessionId: maskSessionId(sessionId),
+  });
 }
 
 export async function deleteAllUserSessions(
   kv: KVNamespace,
-  userId: string
+  userId: string,
 ): Promise<void> {
   const indexKey = `user_sessions:${userId}`;
   const sessionsRaw = await kv.get(indexKey);
 
-  if (!sessionsRaw) return;
+  if (!sessionsRaw) {
+    log("info", "All user sessions deleted", { userId });
+    return;
+  }
 
   const sessionIds = sessionsRaw.split(",").filter(Boolean);
   await Promise.all([
     ...sessionIds.map((id) => kv.delete(`${SESSION_KEY_PREFIX}${id}`)),
     kv.delete(indexKey),
   ]);
+
+  log("info", "All user sessions deleted", { userId });
 }
 
 export async function registerSessionInUserIndex(
   kv: KVNamespace,
   userId: string,
-  sessionId: string
+  sessionId: string,
 ): Promise<void> {
   const indexKey = `user_sessions:${userId}`;
   const existing = (await kv.get(indexKey)) ?? "";
@@ -94,5 +130,10 @@ export async function registerSessionInUserIndex(
 
   await kv.put(indexKey, sessions.join(","), {
     expirationTtl: SESSION_TTL_SECONDS,
+  });
+
+  log("debug", "Session registered in user index", {
+    userId,
+    sessionId: maskSessionId(sessionId),
   });
 }
