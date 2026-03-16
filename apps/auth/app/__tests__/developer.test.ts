@@ -1,18 +1,22 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import type { AppLoadContext } from "react-router";
 import { env } from "cloudflare:workers";
+import type { AppLoadContext } from "react-router";
+import { beforeEach, describe, expect, it } from "vitest";
 import { createDb } from "~/db/index";
-import { createTestSession } from "./setup";
-import type { Env } from "~/types/env";
 import {
   generateApiKey,
+  getApiKeyPrefix,
   hashApiKey,
   verifyApiKey,
-  getApiKeyPrefix,
 } from "~/lib/apikey.server";
-import { loader as appsLoader, action as appsAction } from "~/routes/api.developer.apps";
-import { action as appsIdAction } from "~/routes/api.developer.apps.$id";
+import { createLogger } from "~/lib/logger.server";
 import { createUser } from "~/lib/user.server";
+import {
+  action as appsAction,
+  loader as appsLoader,
+} from "~/routes/api.developer.apps";
+import { action as appsIdAction } from "~/routes/api.developer.apps.$id";
+import type { Env } from "~/types/env";
+import { createTestSession } from "./setup";
 
 const USERS_TABLE_SQL = `
   CREATE TABLE users (
@@ -57,6 +61,7 @@ function makeContext(): AppLoadContext {
       env: bindings,
       ctx: {} as ExecutionContext,
     },
+    logger: createLogger(),
   } as AppLoadContext;
 }
 
@@ -140,14 +145,21 @@ describe("Developer Apps API", () => {
         appleEmail: "unverified@example.com",
         name: "Unverified User",
       });
-      const { sessionId } = await createTestSession(bindings.SESSIONS, "unverified-user");
+      const { sessionId } = await createTestSession(
+        bindings.SESSIONS,
+        "unverified-user",
+      );
 
       const request = new Request("https://example.com/api/developer/apps", {
         method: "GET",
         headers: { Cookie: `adakrpos_session=${sessionId}` },
       });
 
-      const response = await appsLoader({ request, context, params: {} } as any);
+      const response = await appsLoader({
+        request,
+        context,
+        params: {},
+      } as any);
       expect(response.status).toBe(403);
 
       const body = (await response.json()) as { error: string };
@@ -160,17 +172,24 @@ describe("Developer Apps API", () => {
         appleEmail: "verified@example.com",
         name: "Verified User",
       });
-      await bindings.DB.prepare(
-        "UPDATE users SET is_verified = 1 WHERE id = ?"
-      ).bind("verified-user").run();
-      const { sessionId } = await createTestSession(bindings.SESSIONS, "verified-user");
+      await bindings.DB.prepare("UPDATE users SET is_verified = 1 WHERE id = ?")
+        .bind("verified-user")
+        .run();
+      const { sessionId } = await createTestSession(
+        bindings.SESSIONS,
+        "verified-user",
+      );
 
       const request = new Request("https://example.com/api/developer/apps", {
         method: "GET",
         headers: { Cookie: `adakrpos_session=${sessionId}` },
       });
 
-      const response = await appsLoader({ request, context, params: {} } as any);
+      const response = await appsLoader({
+        request,
+        context,
+        params: {},
+      } as any);
       expect(response.status).toBe(200);
 
       const body = (await response.json()) as { apps: unknown[] };
@@ -185,10 +204,13 @@ describe("Developer Apps API", () => {
         appleEmail: "creator@example.com",
         name: "App Creator",
       });
-      await bindings.DB.prepare(
-        "UPDATE users SET is_verified = 1 WHERE id = ?"
-      ).bind("app-creator").run();
-      const { sessionId } = await createTestSession(bindings.SESSIONS, "app-creator");
+      await bindings.DB.prepare("UPDATE users SET is_verified = 1 WHERE id = ?")
+        .bind("app-creator")
+        .run();
+      const { sessionId } = await createTestSession(
+        bindings.SESSIONS,
+        "app-creator",
+      );
 
       const request = new Request("https://example.com/api/developer/apps", {
         method: "POST",
@@ -200,7 +222,11 @@ describe("Developer Apps API", () => {
         body: JSON.stringify({ name: "Test App", description: "A test app" }),
       });
 
-      const response = await appsAction({ request, context, params: {} } as any);
+      const response = await appsAction({
+        request,
+        context,
+        params: {},
+      } as any);
       expect(response.status).toBe(200);
 
       const body = (await response.json()) as {
@@ -219,10 +245,13 @@ describe("Developer Apps API", () => {
         appleEmail: "creator2@example.com",
         name: "App Creator 2",
       });
-      await bindings.DB.prepare(
-        "UPDATE users SET is_verified = 1 WHERE id = ?"
-      ).bind("app-creator2").run();
-      const { sessionId } = await createTestSession(bindings.SESSIONS, "app-creator2");
+      await bindings.DB.prepare("UPDATE users SET is_verified = 1 WHERE id = ?")
+        .bind("app-creator2")
+        .run();
+      const { sessionId } = await createTestSession(
+        bindings.SESSIONS,
+        "app-creator2",
+      );
 
       const request = new Request("https://example.com/api/developer/apps", {
         method: "POST",
@@ -234,7 +263,11 @@ describe("Developer Apps API", () => {
         body: JSON.stringify({ description: "No name" }),
       });
 
-      const response = await appsAction({ request, context, params: {} } as any);
+      const response = await appsAction({
+        request,
+        context,
+        params: {},
+      } as any);
       expect(response.status).toBe(400);
 
       const body = (await response.json()) as { error: string };
@@ -247,20 +280,26 @@ describe("Developer Apps API", () => {
         appleEmail: "creator3@example.com",
         name: "App Creator 3",
       });
-      await bindings.DB.prepare(
-        "UPDATE users SET is_verified = 1 WHERE id = ?"
-      ).bind("app-creator3").run();
-      const { sessionId } = await createTestSession(bindings.SESSIONS, "app-creator3");
+      await bindings.DB.prepare("UPDATE users SET is_verified = 1 WHERE id = ?")
+        .bind("app-creator3")
+        .run();
+      const { sessionId } = await createTestSession(
+        bindings.SESSIONS,
+        "app-creator3",
+      );
 
-      const createRequest = new Request("https://example.com/api/developer/apps", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Origin: "https://example.com",
-          Cookie: `adakrpos_session=${sessionId}`,
+      const createRequest = new Request(
+        "https://example.com/api/developer/apps",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Origin: "https://example.com",
+            Cookie: `adakrpos_session=${sessionId}`,
+          },
+          body: JSON.stringify({ name: "Another App" }),
         },
-        body: JSON.stringify({ name: "Another App" }),
-      });
+      );
 
       const createResponse = await appsAction({
         request: createRequest,
@@ -299,27 +338,35 @@ describe("Developer Apps API", () => {
         appleEmail: "deleter@example.com",
         name: "App Deleter",
       });
-      await bindings.DB.prepare(
-        "UPDATE users SET is_verified = 1 WHERE id = ?"
-      ).bind("app-deleter").run();
-      const { sessionId } = await createTestSession(bindings.SESSIONS, "app-deleter");
+      await bindings.DB.prepare("UPDATE users SET is_verified = 1 WHERE id = ?")
+        .bind("app-deleter")
+        .run();
+      const { sessionId } = await createTestSession(
+        bindings.SESSIONS,
+        "app-deleter",
+      );
 
-      const createRequest = new Request("https://example.com/api/developer/apps", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Origin: "https://example.com",
-          Cookie: `adakrpos_session=${sessionId}`,
+      const createRequest = new Request(
+        "https://example.com/api/developer/apps",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Origin: "https://example.com",
+            Cookie: `adakrpos_session=${sessionId}`,
+          },
+          body: JSON.stringify({ name: "App to Delete" }),
         },
-        body: JSON.stringify({ name: "App to Delete" }),
-      });
+      );
 
       const createResponse = await appsAction({
         request: createRequest,
         context,
         params: {},
       } as any);
-      const createBody = (await createResponse.json()) as { app: { id: string } };
+      const createBody = (await createResponse.json()) as {
+        app: { id: string };
+      };
       const appId = createBody.app.id;
 
       const deleteRequest = new Request(
@@ -330,7 +377,7 @@ describe("Developer Apps API", () => {
             Origin: "https://example.com",
             Cookie: `adakrpos_session=${sessionId}`,
           },
-        }
+        },
       );
 
       const deleteResponse = await appsIdAction({
@@ -366,38 +413,43 @@ describe("Developer Apps API", () => {
         appleEmail: "other@example.com",
         name: "Other User",
       });
-      await bindings.DB.prepare(
-        "UPDATE users SET is_verified = 1 WHERE id = ?"
-      ).bind("owner-user").run();
-      await bindings.DB.prepare(
-        "UPDATE users SET is_verified = 1 WHERE id = ?"
-      ).bind("other-user").run();
+      await bindings.DB.prepare("UPDATE users SET is_verified = 1 WHERE id = ?")
+        .bind("owner-user")
+        .run();
+      await bindings.DB.prepare("UPDATE users SET is_verified = 1 WHERE id = ?")
+        .bind("other-user")
+        .run();
 
       const { sessionId: ownerSession } = await createTestSession(
         bindings.SESSIONS,
-        "owner-user"
+        "owner-user",
       );
       const { sessionId: otherSession } = await createTestSession(
         bindings.SESSIONS,
-        "other-user"
+        "other-user",
       );
 
-      const createRequest = new Request("https://example.com/api/developer/apps", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Origin: "https://example.com",
-          Cookie: `adakrpos_session=${ownerSession}`,
+      const createRequest = new Request(
+        "https://example.com/api/developer/apps",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Origin: "https://example.com",
+            Cookie: `adakrpos_session=${ownerSession}`,
+          },
+          body: JSON.stringify({ name: "Owner's App" }),
         },
-        body: JSON.stringify({ name: "Owner's App" }),
-      });
+      );
 
       const createResponse = await appsAction({
         request: createRequest,
         context,
         params: {},
       } as any);
-      const createBody = (await createResponse.json()) as { app: { id: string } };
+      const createBody = (await createResponse.json()) as {
+        app: { id: string };
+      };
       const appId = createBody.app.id;
 
       const deleteRequest = new Request(
@@ -408,7 +460,7 @@ describe("Developer Apps API", () => {
             Origin: "https://example.com",
             Cookie: `adakrpos_session=${otherSession}`,
           },
-        }
+        },
       );
 
       const deleteResponse = await appsIdAction({
@@ -427,27 +479,35 @@ describe("Developer Apps API", () => {
         appleEmail: "updater@example.com",
         name: "App Updater",
       });
-      await bindings.DB.prepare(
-        "UPDATE users SET is_verified = 1 WHERE id = ?"
-      ).bind("app-updater").run();
-      const { sessionId } = await createTestSession(bindings.SESSIONS, "app-updater");
+      await bindings.DB.prepare("UPDATE users SET is_verified = 1 WHERE id = ?")
+        .bind("app-updater")
+        .run();
+      const { sessionId } = await createTestSession(
+        bindings.SESSIONS,
+        "app-updater",
+      );
 
-      const createRequest = new Request("https://example.com/api/developer/apps", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Origin: "https://example.com",
-          Cookie: `adakrpos_session=${sessionId}`,
+      const createRequest = new Request(
+        "https://example.com/api/developer/apps",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Origin: "https://example.com",
+            Cookie: `adakrpos_session=${sessionId}`,
+          },
+          body: JSON.stringify({ name: "Original Name" }),
         },
-        body: JSON.stringify({ name: "Original Name" }),
-      });
+      );
 
       const createResponse = await appsAction({
         request: createRequest,
         context,
         params: {},
       } as any);
-      const createBody = (await createResponse.json()) as { app: { id: string } };
+      const createBody = (await createResponse.json()) as {
+        app: { id: string };
+      };
       const appId = createBody.app.id;
 
       const patchRequest = new Request(
@@ -459,8 +519,11 @@ describe("Developer Apps API", () => {
             Origin: "https://example.com",
             Cookie: `adakrpos_session=${sessionId}`,
           },
-          body: JSON.stringify({ name: "Updated Name", description: "New description" }),
-        }
+          body: JSON.stringify({
+            name: "Updated Name",
+            description: "New description",
+          }),
+        },
       );
 
       const patchResponse = await appsIdAction({

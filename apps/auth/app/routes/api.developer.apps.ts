@@ -1,19 +1,28 @@
-import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
+import { desc, eq } from "drizzle-orm";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { createDb } from "~/db/index";
 import { developerApps } from "~/db/schema";
+import {
+  generateApiKey,
+  getApiKeyPrefix,
+  hashApiKey,
+} from "~/lib/apikey.server";
+import { maskApiKey } from "~/lib/logger.server";
 import { requireAuthApi } from "~/middleware/auth.server";
 import { validateCsrf } from "~/middleware/csrf.server";
-import { generateApiKey, hashApiKey, getApiKeyPrefix } from "~/lib/apikey.server";
 import type { Env } from "~/types/env";
-import { eq, desc } from "drizzle-orm";
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const auth = await requireAuthApi(request, context);
 
   if (!auth.user.isVerified) {
-    return Response.json({ error: "Email verification required" }, { status: 403 });
+    return Response.json(
+      { error: "Email verification required" },
+      { status: 403 },
+    );
   }
 
+  const { logger } = context as any;
   const env = (context as any).cloudflare.env as Env;
   const db = createDb(env.DB);
 
@@ -30,6 +39,11 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
     .from(developerApps)
     .where(eq(developerApps.userId, auth.user.id))
     .orderBy(desc(developerApps.createdAt));
+
+  logger.info("Developer apps listed", {
+    userId: auth.user.id,
+    count: apps.length,
+  });
 
   return Response.json({
     apps: apps.map((app) => ({
@@ -49,13 +63,20 @@ export async function action({ request, context }: ActionFunctionArgs) {
   const auth = await requireAuthApi(request, context);
 
   if (!auth.user.isVerified) {
-    return Response.json({ error: "Email verification required" }, { status: 403 });
+    return Response.json(
+      { error: "Email verification required" },
+      { status: 403 },
+    );
   }
 
+  const { logger } = context as any;
   const env = (context as any).cloudflare.env as Env;
   const db = createDb(env.DB);
 
-  const body = (await request.json()) as { name?: string; description?: string };
+  const body = (await request.json()) as {
+    name?: string;
+    description?: string;
+  };
 
   if (!body.name || body.name.trim().length === 0) {
     return Response.json({ error: "App name is required" }, { status: 400 });
@@ -77,6 +98,12 @@ export async function action({ request, context }: ActionFunctionArgs) {
     isActive: true,
     createdAt: now,
     updatedAt: now,
+  });
+
+  logger.info("Developer app created", {
+    userId: auth.user.id,
+    appName: body.name.trim(),
+    apiKeyPrefix: maskApiKey(apiKey),
   });
 
   return Response.json({
