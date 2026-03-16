@@ -3,7 +3,12 @@ import { createMiddleware } from "hono/factory";
 
 import { createAdakrposAuth } from "./client";
 import type { AdakrposAuthClient, AdakrposAuthConfig } from "./client";
-import type { AdakrposAuthContext, AuthContext, AdakrposUnauthContext } from "./types";
+import type {
+  AdakrposAuthContext,
+  AdakrposLogFn,
+  AdakrposUnauthContext,
+  AuthContext,
+} from "./types";
 
 type AuthFn = () => Promise<AuthContext>;
 
@@ -19,7 +24,10 @@ const UNAUTH_CONTEXT: AdakrposUnauthContext = {
   isAuthenticated: false,
 };
 
-function getSessionId(cookieHeader: string): string | null {
+function getSessionId(
+  cookieHeader: string,
+  logger?: AdakrposLogFn,
+): string | null {
   const sessionMatch = cookieHeader.match(/(?:^|;\s*)adakrpos_session=([^;]+)/);
 
   if (!sessionMatch) {
@@ -28,26 +36,35 @@ function getSessionId(cookieHeader: string): string | null {
 
   try {
     return decodeURIComponent(sessionMatch[1]);
-  } catch {
+  } catch (error) {
+    logger?.("debug", "Cookie decode failed", { error });
     return sessionMatch[1];
   }
 }
 
-function createAuthFn(client: AdakrposAuthClient, sessionId: string | null): AuthFn {
+function createAuthFn(
+  client: AdakrposAuthClient,
+  sessionId: string | null,
+  logger?: AdakrposLogFn,
+): AuthFn {
   let authPromise: Promise<AuthContext> | undefined;
 
   return async () => {
     if (!authPromise) {
       authPromise = (async () => {
         if (!sessionId) {
+          logger?.("info", "Auth resolved", { isAuthenticated: false });
           return UNAUTH_CONTEXT;
         }
 
         const result = await client.verifySession(sessionId);
 
         if (!result) {
+          logger?.("info", "Auth resolved", { isAuthenticated: false });
           return UNAUTH_CONTEXT;
         }
+
+        logger?.("info", "Auth resolved", { isAuthenticated: true });
 
         return {
           user: result.user,
@@ -61,16 +78,23 @@ function createAuthFn(client: AdakrposAuthClient, sessionId: string | null): Aut
   };
 }
 
-function setAuthContext(c: Context, client: AdakrposAuthClient): void {
+function setAuthContext(
+  c: Context,
+  client: AdakrposAuthClient,
+  logger?: AdakrposLogFn,
+): void {
   const cookieHeader = c.req.header("Cookie") ?? "";
-  c.set("auth", createAuthFn(client, getSessionId(cookieHeader)));
+  c.set(
+    "auth",
+    createAuthFn(client, getSessionId(cookieHeader, logger), logger),
+  );
 }
 
 export function adakrposAuth(config: AdakrposAuthConfig) {
   const client = createAdakrposAuth(config);
 
   return createMiddleware(async (c, next) => {
-    setAuthContext(c, client);
+    setAuthContext(c, client, config.logger);
     await next();
   });
 }
@@ -89,9 +113,10 @@ export function requireAuth(config: AdakrposAuthConfig) {
   const client = createAdakrposAuth(config);
 
   return createMiddleware(async (c, next) => {
-    setAuthContext(c, client);
+    setAuthContext(c, client, config.logger);
 
     if (!(await getAuth(c)).isAuthenticated) {
+      config.logger?.("warn", "Auth required: not authenticated");
       return c.json({ error: "Unauthorized" }, 401);
     }
 

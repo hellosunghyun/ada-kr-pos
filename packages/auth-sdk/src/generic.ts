@@ -1,6 +1,11 @@
 import { createAdakrposAuth } from "./client";
 import type { AdakrposAuthConfig } from "./client";
-import type { AuthContext, AdakrposAuthContext, AdakrposUnauthContext } from "./types";
+import type {
+  AdakrposAuthContext,
+  AdakrposLogFn,
+  AdakrposUnauthContext,
+  AuthContext,
+} from "./types";
 
 const UNAUTH_CONTEXT: AdakrposUnauthContext = {
   user: null,
@@ -8,7 +13,10 @@ const UNAUTH_CONTEXT: AdakrposUnauthContext = {
   isAuthenticated: false,
 };
 
-function getSessionId(cookieHeader: string): string | null {
+function getSessionId(
+  cookieHeader: string,
+  logger?: AdakrposLogFn,
+): string | null {
   const sessionMatch = cookieHeader.match(/(?:^|;\s*)adakrpos_session=([^;]+)/);
 
   if (!sessionMatch) {
@@ -17,7 +25,8 @@ function getSessionId(cookieHeader: string): string | null {
 
   try {
     return decodeURIComponent(sessionMatch[1]);
-  } catch {
+  } catch (error) {
+    logger?.("debug", "Cookie decode failed", { error });
     return sessionMatch[1];
   }
 }
@@ -31,16 +40,20 @@ export async function verifyRequest(
   const client = createAdakrposAuth(config);
 
   const cookieHeader = request.headers.get("Cookie") ?? "";
-  const sessionId = getSessionId(cookieHeader);
+  const sessionId = getSessionId(cookieHeader, config.logger);
 
   if (!sessionId) {
+    config.logger?.("info", "Auth resolved", { isAuthenticated: false });
     return UNAUTH_CONTEXT;
   }
 
   const result = await client.verifySession(sessionId);
   if (!result) {
+    config.logger?.("info", "Auth resolved", { isAuthenticated: false });
     return UNAUTH_CONTEXT;
   }
+
+  config.logger?.("info", "Auth resolved", { isAuthenticated: true });
 
   return {
     user: result.user,

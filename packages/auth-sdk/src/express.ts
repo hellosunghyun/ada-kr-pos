@@ -1,6 +1,11 @@
 import { createAdakrposAuth } from "./client";
-import type { AdakrposAuthConfig } from "./client";
-import type { AuthContext, AdakrposAuthContext, AdakrposUnauthContext } from "./types";
+import type { AdakrposAuthClient, AdakrposAuthConfig } from "./client";
+import type {
+  AdakrposAuthContext,
+  AdakrposLogFn,
+  AdakrposUnauthContext,
+  AuthContext,
+} from "./types";
 
 // Augment Express Request type
 declare global {
@@ -17,7 +22,22 @@ const UNAUTH_CONTEXT: AdakrposUnauthContext = {
   isAuthenticated: false,
 };
 
-function getSessionId(cookieHeader: string): string | null {
+type ExpressLikeRequest = {
+  headers?: { cookie?: string };
+  auth?: () => Promise<AuthContext>;
+};
+
+type ExpressLikeResponse = {
+  status: (statusCode: number) => ExpressLikeResponse;
+  json: (body: unknown) => unknown;
+};
+
+type NextFunction = () => void;
+
+function getSessionId(
+  cookieHeader: string,
+  logger?: AdakrposLogFn,
+): string | null {
   const sessionMatch = cookieHeader.match(/(?:^|;\s*)adakrpos_session=([^;]+)/);
 
   if (!sessionMatch) {
@@ -26,26 +46,35 @@ function getSessionId(cookieHeader: string): string | null {
 
   try {
     return decodeURIComponent(sessionMatch[1]);
-  } catch {
+  } catch (error) {
+    logger?.("debug", "Cookie decode failed", { error });
     return sessionMatch[1];
   }
 }
 
-function createAuthFn(client: any, sessionId: string | null): () => Promise<AuthContext> {
+function createAuthFn(
+  client: AdakrposAuthClient,
+  sessionId: string | null,
+  logger?: AdakrposLogFn,
+): () => Promise<AuthContext> {
   let authPromise: Promise<AuthContext> | undefined;
 
   return async () => {
     if (!authPromise) {
       authPromise = (async () => {
         if (!sessionId) {
+          logger?.("info", "Auth resolved", { isAuthenticated: false });
           return UNAUTH_CONTEXT;
         }
 
         const result = await client.verifySession(sessionId);
 
         if (!result) {
+          logger?.("info", "Auth resolved", { isAuthenticated: false });
           return UNAUTH_CONTEXT;
         }
+
+        logger?.("info", "Auth resolved", { isAuthenticated: true });
 
         return {
           user: result.user,
@@ -63,12 +92,12 @@ function createAuthFn(client: any, sessionId: string | null): () => Promise<Auth
 export function adakrposAuthExpress(config: AdakrposAuthConfig) {
   const client = createAdakrposAuth(config);
 
-  return async (req: any, res: any, next: any) => {
+  return async (req: ExpressLikeRequest, _res: unknown, next: NextFunction) => {
     const cookieHeader = req.headers?.cookie ?? "";
-    const sessionId = getSessionId(cookieHeader);
+    const sessionId = getSessionId(cookieHeader, config.logger);
 
     // Lazy function — only calls server when invoked
-    req.auth = createAuthFn(client, sessionId);
+    req.auth = createAuthFn(client, sessionId, config.logger);
 
     next();
   };
@@ -78,14 +107,19 @@ export function adakrposAuthExpress(config: AdakrposAuthConfig) {
 export function requireAuthExpress(config: AdakrposAuthConfig) {
   const client = createAdakrposAuth(config);
 
-  return async (req: any, res: any, next: any) => {
+  return async (
+    req: ExpressLikeRequest,
+    res: ExpressLikeResponse,
+    next: NextFunction,
+  ) => {
     const cookieHeader = req.headers?.cookie ?? "";
-    const sessionId = getSessionId(cookieHeader);
+    const sessionId = getSessionId(cookieHeader, config.logger);
 
-    req.auth = createAuthFn(client, sessionId);
+    req.auth = createAuthFn(client, sessionId, config.logger);
 
     const auth = await req.auth();
     if (!auth?.isAuthenticated) {
+      config.logger?.("warn", "Auth required: not authenticated");
       return res.status(401).json({ error: "Unauthorized" });
     }
 

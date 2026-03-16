@@ -1,6 +1,12 @@
+export type AdakrposLogFn = (
+  level: "info" | "warn" | "error" | "debug",
+  message: string,
+  meta?: Record<string, unknown>,
+) => void;
+
 export interface AdakrposUser {
   id: string;
-  email: string | null;         // Apple email (apple_email column)
+  email: string | null; // Apple email (apple_email column)
   verifiedEmail: string | null; // pos.idserve.net verified email
   nickname: string | null;
   name: string | null;
@@ -8,17 +14,17 @@ export interface AdakrposUser {
   bio: string | null;
   contact: string | null;
   snsLinks: Record<string, string>;
-  cohort: string | null;        // e.g. "2026"
-  isVerified: boolean;          // true if pos.idserve.net email verified
-  createdAt: number;            // Unix timestamp (milliseconds)
-  updatedAt: number;            // Unix timestamp (milliseconds)
+  cohort: string | null; // e.g. "2026"
+  isVerified: boolean; // true if pos.idserve.net email verified
+  createdAt: number; // Unix timestamp (milliseconds)
+  updatedAt: number; // Unix timestamp (milliseconds)
 }
 
 export interface AdakrposSession {
   id: string;
   userId: string;
-  expiresAt: number;  // Unix timestamp (milliseconds)
-  createdAt: number;  // Unix timestamp (milliseconds)
+  expiresAt: number; // Unix timestamp (milliseconds)
+  createdAt: number; // Unix timestamp (milliseconds)
 }
 
 export interface AdakrposAuthContext {
@@ -40,7 +46,7 @@ export interface DeveloperApp {
   userId: string;
   name: string;
   description: string | null;
-  apiKeyPrefix: string;  // First 8 chars only (NEVER full key)
+  apiKeyPrefix: string; // First 8 chars only (NEVER full key)
   redirectUrls: string[];
   isActive: boolean;
   createdAt: number;
