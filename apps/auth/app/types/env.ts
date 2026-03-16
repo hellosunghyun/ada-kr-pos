@@ -12,4 +12,5 @@ export interface Env {
   RESEND_API_KEY: string;
   AUTH_SECRET: string;
   COOKIE_DOMAIN: string;
+  LOG_LEVEL?: string;
 }

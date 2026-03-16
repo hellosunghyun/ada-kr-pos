@@ -34,6 +34,7 @@ bucket_name = "ada-kr-pos-profile-photos"
 [vars]
 COOKIE_DOMAIN = ".ada-kr-pos.com"
 AUTH_URL = "https://ada-kr-pos.com"
+LOG_LEVEL = "info"
 
 [observability]
 [observability.logs]
