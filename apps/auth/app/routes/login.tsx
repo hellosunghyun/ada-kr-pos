@@ -2,7 +2,9 @@ import { Form, useActionData, useLoaderData } from "react-router";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { redirect } from "react-router";
 import { getValidatedRedirect } from "~/lib/callback.server";
+import { sendMagicLink } from "~/lib/magic-link.server";
 import { optionalAuth } from "~/middleware/auth.server";
+import type { Env } from "~/types/env";
 
 interface ActionData {
   success?: boolean;
@@ -26,6 +28,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 
 export async function action({
   request,
+  context,
 }: ActionFunctionArgs): Promise<ActionData> {
   const formData = await request.formData();
   const email = formData.get("email") as string;
@@ -39,25 +42,24 @@ export async function action({
     return { error: "Invalid email domain. Only @pos.idserve.net allowed." };
   }
 
-  const response = await fetch(new URL("/api/auth/magic/send", request.url), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Origin: request.headers.get("Origin") || new URL(request.url).origin,
-    },
-    body: JSON.stringify({ email, callbackUrl }),
-  });
+  const env = (context as Record<string, Record<string, unknown>>).cloudflare
+    .env as Env;
 
-  if (response.ok) {
+  try {
+    await sendMagicLink(
+      env.RESEND_API_KEY,
+      env.MAGIC_TOKENS as KVNamespace,
+      email,
+      callbackUrl ?? undefined,
+    );
     return { success: true };
+  } catch (error) {
+    console.error("[login] Failed to send magic link:", error);
+    return {
+      error:
+        error instanceof Error ? error.message : "이메일 전송에 실패했습니다.",
+    };
   }
-
-  const data = await response
-    .json()
-    .catch(() => ({ error: "알 수 없는 오류가 발생했습니다." }));
-  return {
-    error: (data as { error?: string }).error || "이메일 전송에 실패했습니다.",
-  };
 }
 
 export default function Login() {
