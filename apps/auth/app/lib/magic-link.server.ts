@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import type { createDb } from "~/db/index";
 import { users } from "~/db/schema";
+import { log, maskEmail } from "~/lib/logger.server";
 import { createSession } from "~/lib/session.server";
 import { getUserByEmail, getUserByVerifiedEmail } from "~/lib/user.server";
 
@@ -49,6 +50,10 @@ export async function sendMagicLink(
     },
   );
 
+  log("info", "Magic link token generated", {
+    email: maskEmail(normalizedEmail),
+  });
+
   const verifyUrl = `https://ada-kr-pos.com/api/auth/magic/verify?token=${token}`;
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -66,11 +71,18 @@ export async function sendMagicLink(
 
   if (!response.ok) {
     const body = await response.text().catch(() => "unable to read body");
-    console.error(
-      `[magic-link] Resend API error: status=${response.status} body=${body}`,
-    );
+    log("error", "Resend API error", {
+      error: {
+        status: response.status,
+        body,
+      },
+    });
     throw new Error(`Failed to send magic link email: ${response.status}`);
   }
+
+  log("info", "Magic link email sent", {
+    email: maskEmail(normalizedEmail),
+  });
 }
 
 export async function verifyMagicLink(
@@ -88,6 +100,9 @@ export async function verifyMagicLink(
   const raw = await kv.get(key);
 
   if (!raw) {
+    log("warn", "Magic link token invalid or expired", {
+      reason: "token_missing",
+    });
     throw new Error("Invalid or expired magic link token");
   }
 
@@ -104,6 +119,9 @@ export async function verifyMagicLink(
   await kv.delete(key);
 
   if (!email) {
+    log("warn", "Magic link token invalid or expired", {
+      reason: "email_missing",
+    });
     throw new Error("Invalid or expired magic link token");
   }
 
@@ -130,6 +148,8 @@ export async function verifyMagicLink(
   }
 
   const { sessionId, expiresAt } = await createSession(sessionKv, userId);
+
+  log("info", "Magic link token verified", { userId });
 
   return { userId, sessionId, expiresAt, callbackUrl: storedCallbackUrl };
 }

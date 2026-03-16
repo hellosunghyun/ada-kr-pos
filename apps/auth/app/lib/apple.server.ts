@@ -1,4 +1,5 @@
 import { SignJWT, createRemoteJWKSet, importPKCS8, jwtVerify } from "jose";
+import { log } from "~/lib/logger.server";
 import type { Env } from "~/types/env";
 
 const APPLE_JWKS_URL = "https://appleid.apple.com/auth/keys";
@@ -18,6 +19,7 @@ function getAppleJwks() {
 }
 
 export async function generateClientSecret(env: Env): Promise<string> {
+  log("debug", "Generating Apple client secret");
   const privateKey = await importPKCS8(env.APPLE_PRIVATE_KEY, "ES256");
   const now = Math.floor(Date.now() / 1000);
   const sixMonths = 6 * 30 * 24 * 60 * 60;
@@ -34,8 +36,9 @@ export async function generateClientSecret(env: Env): Promise<string> {
 
 export async function exchangeAuthorizationCode(
   code: string,
-  env: Env
+  env: Env,
 ): Promise<{ idToken: string; accessToken: string }> {
+  log("info", "Apple token exchange initiated");
   const clientSecret = await generateClientSecret(env);
   const body = new URLSearchParams({
     client_id: env.APPLE_CLIENT_ID,
@@ -49,10 +52,14 @@ export async function exchangeAuthorizationCode(
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: body.toString(),
+  }).catch((error: unknown) => {
+    log("error", "Apple token exchange failed", { error });
+    throw error;
   });
 
   if (!response.ok) {
     const error = await response.text();
+    log("error", "Apple token exchange failed", { error });
     throw new Error(`Apple token exchange failed: ${error}`);
   }
 
@@ -63,6 +70,7 @@ export async function exchangeAuthorizationCode(
   };
 
   if (data.error) {
+    log("error", "Apple token exchange failed", { error: data.error });
     throw new Error(`Apple token error: ${data.error}`);
   }
 
@@ -71,15 +79,22 @@ export async function exchangeAuthorizationCode(
 
 export async function verifyIdToken(
   idToken: string,
-  clientId: string
+  clientId: string,
 ): Promise<{ sub: string; email?: string; emailVerified?: boolean }> {
   const { payload } = await jwtVerify(idToken, getAppleJwks(), {
     issuer: APPLE_ISSUER,
     audience: clientId,
+  }).catch((error: unknown) => {
+    log("error", "Apple ID token verification failed", { error });
+    throw error;
   });
 
+  const sub = payload.sub as string;
+
+  log("info", "Apple ID token verified", { sub });
+
   return {
-    sub: payload.sub as string,
+    sub,
     email: payload.email as string | undefined,
     emailVerified:
       typeof payload.email_verified === "string"
@@ -92,11 +107,16 @@ function decodeBase64Url(value: string): string {
   const withPadding = value.replace(/-/g, "+").replace(/_/g, "/");
   const missingPadding = withPadding.length % 4;
   const padded =
-    missingPadding === 0 ? withPadding : withPadding + "=".repeat(4 - missingPadding);
+    missingPadding === 0
+      ? withPadding
+      : withPadding + "=".repeat(4 - missingPadding);
   return atob(padded);
 }
 
-export function extractUserInfo(idToken: string): { sub: string; email: string | null } {
+export function extractUserInfo(idToken: string): {
+  sub: string;
+  email: string | null;
+} {
   const parts = idToken.split(".");
   if (parts.length !== 3) {
     throw new Error("Invalid JWT format");
@@ -121,7 +141,7 @@ export function buildAppleAuthUrl(
   clientId: string,
   redirectUri: string,
   state: string,
-  nonce: string
+  nonce: string,
 ): string {
   const params = new URLSearchParams({
     client_id: clientId,

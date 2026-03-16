@@ -1,10 +1,12 @@
 import type { LoaderFunctionArgs } from "react-router";
 import { redirect } from "react-router";
 import { buildAppleAuthUrl } from "~/lib/apple.server";
+import { createLogger } from "~/lib/logger.server";
 import { optionalAuth } from "~/middleware/auth.server";
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const env = context.cloudflare.env;
+  const { logger = createLogger() } = context;
   const url = new URL(request.url);
   const isLink = url.searchParams.get("link") === "true";
   const callbackUrl = url.searchParams.get("callbackUrl") || undefined;
@@ -34,6 +36,11 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
     state,
     nonce,
   );
+
+  logger.info("Apple OAuth initiated", {
+    isLink,
+    hasCallbackUrl: Boolean(callbackUrl),
+  });
 
   return redirect(appleUrl);
 }

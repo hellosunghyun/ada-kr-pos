@@ -1,7 +1,7 @@
 import type { ActionFunctionArgs } from "react-router";
+import { createLogger, maskEmail } from "~/lib/logger.server";
 import { sendMagicLink } from "~/lib/magic-link.server";
 import { validateCsrf } from "~/middleware/csrf.server";
-import type { Env } from "~/types/env";
 
 export async function action({ request, context }: ActionFunctionArgs) {
   if (request.method !== "POST") {
@@ -23,7 +23,10 @@ export async function action({ request, context }: ActionFunctionArgs) {
     return Response.json({ error: "Email required" }, { status: 400 });
   }
 
-  const env = (context as any).cloudflare.env as Env;
+  const env = context.cloudflare.env;
+  const { logger = createLogger() } = context;
+
+  logger.info("Magic link requested", { email: maskEmail(email) });
 
   try {
     await sendMagicLink(
@@ -32,6 +35,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
       email,
       callbackUrl,
     );
+    logger.info("Magic link sent successfully", { email: maskEmail(email) });
   } catch (error) {
     if (
       error instanceof Error &&
@@ -40,7 +44,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
       return Response.json({ error: error.message }, { status: 400 });
     }
 
-    console.error("[magic/send] Failed to send magic link:", error);
+    logger.error("Magic link send failed", { error });
     return Response.json(
       { error: "이메일 전송에 실패했습니다." },
       { status: 500 },
