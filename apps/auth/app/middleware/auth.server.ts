@@ -1,21 +1,21 @@
-import { redirect } from "react-router";
-import type { AppLoadContext } from "react-router";
 import type {
-  AuthContext,
   AdakrposAuthContext,
   AdakrposUnauthContext,
   AdakrposUser,
+  AuthContext,
 } from "@adakrpos/auth";
-import { getSessionIdFromCookie } from "~/lib/cookie.server";
-import { getSession } from "~/lib/session.server";
+import { eq } from "drizzle-orm";
+import { redirect } from "react-router";
+import type { AppLoadContext } from "react-router";
 import { createDb } from "~/db/index";
 import { users } from "~/db/schema";
-import { eq } from "drizzle-orm";
+import { getSessionIdFromCookie } from "~/lib/cookie.server";
+import { getSession } from "~/lib/session.server";
 import type { Env } from "~/types/env";
 
 async function getUserById(
   db: ReturnType<typeof createDb>,
-  userId: string
+  userId: string,
 ): Promise<AdakrposUser | null> {
   try {
     const user = await db
@@ -55,7 +55,7 @@ async function getUserById(
 
 async function getAuthContext(
   request: Request,
-  context: AppLoadContext
+  context: AppLoadContext,
 ): Promise<AuthContext> {
   const env = (context as any).cloudflare.env as Env;
   const kv = env.SESSIONS;
@@ -106,12 +106,18 @@ async function getAuthContext(
 
 export async function requireAuthPage(
   request: Request,
-  context: AppLoadContext
+  context: AppLoadContext,
 ): Promise<AdakrposAuthContext> {
   const authContext = await getAuthContext(request, context);
 
   if (!authContext.isAuthenticated) {
-    throw redirect("/login");
+    const url = new URL(request.url);
+    const currentPath = url.pathname + url.search;
+    const loginUrl =
+      currentPath === "/mypage"
+        ? "/login"
+        : `/login?callbackUrl=${encodeURIComponent(url.href)}`;
+    throw redirect(loginUrl);
   }
 
   return authContext as AdakrposAuthContext;
@@ -119,7 +125,7 @@ export async function requireAuthPage(
 
 export async function requireAuthApi(
   request: Request,
-  context: AppLoadContext
+  context: AppLoadContext,
 ): Promise<AdakrposAuthContext> {
   const authContext = await getAuthContext(request, context);
 
@@ -135,7 +141,7 @@ export async function requireAuthApi(
 
 export async function optionalAuth(
   request: Request,
-  context: AppLoadContext
+  context: AppLoadContext,
 ): Promise<AuthContext> {
   return getAuthContext(request, context);
 }
