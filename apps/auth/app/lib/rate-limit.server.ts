@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { createDb } from "~/db/index";
 import { developerApps } from "~/db/schema";
 import { hashApiKey, verifyApiKey } from "~/lib/apikey.server";
+import { log, maskApiKey } from "~/lib/logger.server";
 import type { Env } from "~/types/env";
 
 const RATE_LIMIT_MAX_REQUESTS = 100;
@@ -53,7 +54,14 @@ export async function applyApiKeyRateLimit(
   const kvKey = `ratelimit:${apiKeyPrefix}:${windowMinute}`;
   const count = Number.parseInt((await kv.get(kvKey)) ?? "0", 10);
 
+  log("debug", "Rate limit check", { prefix: maskApiKey(apiKeyPrefix), count });
+
   if (count >= RATE_LIMIT_MAX_REQUESTS) {
+    log("warn", "Rate limit exceeded", {
+      prefix: maskApiKey(apiKeyPrefix),
+      count,
+      limit: RATE_LIMIT_MAX_REQUESTS,
+    });
     return Response.json({ error: "Rate limit exceeded" }, { status: 429 });
   }
 
@@ -71,6 +79,7 @@ export async function requireSdkApiKey(
   const apiKey = getBearerToken(request);
 
   if (!apiKey) {
+    log("warn", "API key validation failed", { reason: "Missing API key" });
     return Response.json({ error: "Missing API key" }, { status: 401 });
   }
 
@@ -95,10 +104,19 @@ export async function requireSdkApiKey(
     .get();
 
   if (!app || !(await verifyApiKey(apiKey, app.apiKeyHash))) {
+    log("warn", "API key validation failed", { reason: "Invalid API key" });
     return Response.json({ error: "Invalid API key" }, { status: 403 });
   }
 
-  const rateLimitResponse = await applyApiKeyRateLimit(env.RATE_LIMITS, app.apiKeyPrefix);
+  log("info", "API key validated", {
+    prefix: maskApiKey(app.apiKeyPrefix),
+    appId: app.id,
+  });
+
+  const rateLimitResponse = await applyApiKeyRateLimit(
+    env.RATE_LIMITS,
+    app.apiKeyPrefix,
+  );
 
   if (rateLimitResponse) {
     return rateLimitResponse;

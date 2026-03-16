@@ -1,8 +1,13 @@
 import type { LoaderFunctionArgs } from "react-router";
+import { createLogger } from "~/lib/logger.server";
 import type { Env } from "~/types/env";
 
 export async function loader({ params, context }: LoaderFunctionArgs) {
+  const { logger = createLogger() } = context;
   const key = params["*"];
+
+  logger.debug("Photo requested", { path: key });
+
   if (!key) {
     return new Response("Not Found", { status: 404 });
   }
