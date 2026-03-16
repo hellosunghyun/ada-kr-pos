@@ -40,6 +40,7 @@ export default {
           path: pathname,
           status,
           duration: Date.now() - startTime,
+          userId: "anonymous",
         });
       }
     }
