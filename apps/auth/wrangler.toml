@@ -35,5 +35,10 @@ bucket_name = "ada-kr-pos-profile-photos"
 COOKIE_DOMAIN = ".ada-kr-pos.com"
 AUTH_URL = "https://ada-kr-pos.com"
 
+[observability]
+[observability.logs]
+enabled = false
+invocation_logs = true
+
 [dev]
 port = 5173
