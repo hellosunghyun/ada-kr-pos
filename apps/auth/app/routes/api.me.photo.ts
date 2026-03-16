@@ -1,5 +1,6 @@
 import type { ActionFunctionArgs } from "react-router";
 import { createDb } from "~/db/index";
+import { createLogger } from "~/lib/logger.server";
 import { updateProfilePhoto } from "~/lib/user.server";
 import { requireAuthApi } from "~/middleware/auth.server";
 import { validateCsrf } from "~/middleware/csrf.server";
@@ -13,6 +14,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
   await validateCsrf(request);
 
   const auth = await requireAuthApi(request, context);
+  const { logger = createLogger() } = context;
   const env = (context as any).cloudflare.env as Env;
   const db = createDb(env.DB);
   const r2 = env.PROFILE_PHOTOS;
@@ -24,6 +26,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
     return Response.json({ error: "No file" }, { status: 400 });
   }
 
+  logger.info("Profile photo upload attempted", { userId: auth.user.id });
   const key = `photos/${auth.user.id}/${Date.now()}-${file.name}`;
   await r2.put(key, file.stream(), {
     httpMetadata: {
@@ -33,6 +36,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
   const photoUrl = `/api/photos/${key}`;
   const updated = await updateProfilePhoto(db, auth.user.id, photoUrl);
+  logger.info("Profile photo uploaded", { userId: auth.user.id });
 
   return Response.json({ user: updated, photoUrl });
 }

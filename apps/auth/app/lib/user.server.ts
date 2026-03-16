@@ -1,7 +1,8 @@
 import type { AdakrposUser } from "@adakrpos/auth";
 import { eq } from "drizzle-orm";
-import { createDb } from "~/db/index";
+import type { createDb } from "~/db/index";
 import { users } from "~/db/schema";
+import { log, maskEmail } from "~/lib/logger.server";
 
 type Db = ReturnType<typeof createDb>;
 type UserRow = typeof users.$inferSelect;
@@ -17,8 +18,9 @@ function parseSnsLinks(value: string | null): Record<string, string> {
 
     return Object.fromEntries(
       Object.entries(parsed).filter(
-        (entry): entry is [string, string] => typeof entry[0] === "string" && typeof entry[1] === "string"
-      )
+        (entry): entry is [string, string] =>
+          typeof entry[0] === "string" && typeof entry[1] === "string",
+      ),
     );
   } catch {
     return {};
@@ -43,7 +45,10 @@ function mapUser(row: UserRow): AdakrposUser {
   };
 }
 
-async function getRequiredUserById(db: Db, userId: string): Promise<AdakrposUser> {
+async function getRequiredUserById(
+  db: Db,
+  userId: string,
+): Promise<AdakrposUser> {
   const user = await getUserById(db, userId);
 
   if (!user) {
@@ -60,7 +65,7 @@ export async function createUser(
     appleEmail?: string;
     nickname?: string;
     name?: string;
-  }
+  },
 ): Promise<AdakrposUser> {
   const now = new Date();
 
@@ -75,26 +80,52 @@ export async function createUser(
     updatedAt: now,
   });
 
+  log("info", "User created", { userId: data.id });
   return getRequiredUserById(db, data.id);
 }
 
-export async function getUserById(db: Db, userId: string): Promise<AdakrposUser | null> {
+export async function getUserById(
+  db: Db,
+  userId: string,
+): Promise<AdakrposUser | null> {
+  log("debug", "User lookup by ID", { userId });
   const row = await db.select().from(users).where(eq(users.id, userId)).get();
   return row ? mapUser(row) : null;
 }
 
-export async function getUserByAppleSub(db: Db, appleSub: string): Promise<AdakrposUser | null> {
-  const row = await db.select().from(users).where(eq(users.appleSub, appleSub)).get();
+export async function getUserByAppleSub(
+  db: Db,
+  appleSub: string,
+): Promise<AdakrposUser | null> {
+  const row = await db
+    .select()
+    .from(users)
+    .where(eq(users.appleSub, appleSub))
+    .get();
   return row ? mapUser(row) : null;
 }
 
-export async function getUserByEmail(db: Db, email: string): Promise<AdakrposUser | null> {
-  const row = await db.select().from(users).where(eq(users.appleEmail, email)).get();
+export async function getUserByEmail(
+  db: Db,
+  email: string,
+): Promise<AdakrposUser | null> {
+  const row = await db
+    .select()
+    .from(users)
+    .where(eq(users.appleEmail, email))
+    .get();
   return row ? mapUser(row) : null;
 }
 
-export async function getUserByVerifiedEmail(db: Db, verifiedEmail: string): Promise<AdakrposUser | null> {
-  const row = await db.select().from(users).where(eq(users.verifiedEmail, verifiedEmail)).get();
+export async function getUserByVerifiedEmail(
+  db: Db,
+  verifiedEmail: string,
+): Promise<AdakrposUser | null> {
+  const row = await db
+    .select()
+    .from(users)
+    .where(eq(users.verifiedEmail, verifiedEmail))
+    .get();
   return row ? mapUser(row) : null;
 }
 
@@ -108,7 +139,7 @@ export async function updateUserProfile(
     contact?: string;
     snsLinks?: Record<string, string>;
     cohort?: string | null;
-  }
+  },
 ): Promise<AdakrposUser> {
   const updateData: Partial<typeof users.$inferInsert> = {
     updatedAt: new Date(),
@@ -125,10 +156,18 @@ export async function updateUserProfile(
 
   await db.update(users).set(updateData).where(eq(users.id, userId));
 
+  log("info", "User profile updated", {
+    userId,
+    fields: Object.keys(profile).join(","),
+  });
   return getRequiredUserById(db, userId);
 }
 
-export async function updateProfilePhoto(db: Db, userId: string, photoUrl: string): Promise<AdakrposUser> {
+export async function updateProfilePhoto(
+  db: Db,
+  userId: string,
+  photoUrl: string,
+): Promise<AdakrposUser> {
   await db
     .update(users)
     .set({
@@ -137,10 +176,15 @@ export async function updateProfilePhoto(db: Db, userId: string, photoUrl: strin
     })
     .where(eq(users.id, userId));
 
+  log("info", "Profile photo updated", { userId });
   return getRequiredUserById(db, userId);
 }
 
-export async function verifyUserEmail(db: Db, userId: string, verifiedEmail: string): Promise<AdakrposUser> {
+export async function verifyUserEmail(
+  db: Db,
+  userId: string,
+  verifiedEmail: string,
+): Promise<AdakrposUser> {
   await db
     .update(users)
     .set({
@@ -150,6 +194,10 @@ export async function verifyUserEmail(db: Db, userId: string, verifiedEmail: str
     })
     .where(eq(users.id, userId));
 
+  log("info", "User email verified", {
+    userId,
+    email: maskEmail(verifiedEmail),
+  });
   return getRequiredUserById(db, userId);
 }
 
@@ -157,7 +205,7 @@ export async function linkAppleAccount(
   db: Db,
   userId: string,
   appleSub: string,
-  appleEmail?: string
+  appleEmail?: string,
 ): Promise<AdakrposUser> {
   await db
     .update(users)
@@ -168,10 +216,14 @@ export async function linkAppleAccount(
     })
     .where(eq(users.id, userId));
 
+  log("info", "Apple account linked", { userId });
   return getRequiredUserById(db, userId);
 }
 
-export async function unlinkAppleAccount(db: Db, userId: string): Promise<AdakrposUser> {
+export async function unlinkAppleAccount(
+  db: Db,
+  userId: string,
+): Promise<AdakrposUser> {
   await db
     .update(users)
     .set({
@@ -181,6 +233,7 @@ export async function unlinkAppleAccount(db: Db, userId: string): Promise<Adakrp
     })
     .where(eq(users.id, userId));
 
+  log("info", "Apple account unlinked", { userId });
   return getRequiredUserById(db, userId);
 }
 
@@ -190,31 +243,52 @@ export async function findOrCreateUser(
     id: string;
     appleEmail?: string;
     name?: string;
-  }
+  },
 ): Promise<AdakrposUser> {
   const existingById = await getUserById(db, data.id);
-  if (existingById) return existingById;
+  if (existingById) {
+    log("info", "User found by ID", { userId: existingById.id });
+    return existingById;
+  }
 
   const existingByAppleSub = await getUserByAppleSub(db, data.id);
-  if (existingByAppleSub) return existingByAppleSub;
+  if (existingByAppleSub) {
+    log("info", "User found by Apple sub", { userId: existingByAppleSub.id });
+    return existingByAppleSub;
+  }
 
   if (data.appleEmail) {
     const existingByEmail = await getUserByEmail(db, data.appleEmail);
-    if (existingByEmail) return existingByEmail;
+    if (existingByEmail) {
+      log("info", "User found by Apple email", { userId: existingByEmail.id });
+      return existingByEmail;
+    }
 
-    const existingByVerifiedEmail = await getUserByVerifiedEmail(db, data.appleEmail);
+    const existingByVerifiedEmail = await getUserByVerifiedEmail(
+      db,
+      data.appleEmail,
+    );
     if (existingByVerifiedEmail) {
       await db
         .update(users)
-        .set({ appleSub: data.id, appleEmail: data.appleEmail, updatedAt: new Date() })
+        .set({
+          appleSub: data.id,
+          appleEmail: data.appleEmail,
+          updatedAt: new Date(),
+        })
         .where(eq(users.id, existingByVerifiedEmail.id));
+      log("info", "User found by verified email", {
+        userId: existingByVerifiedEmail.id,
+      });
       return getRequiredUserById(db, existingByVerifiedEmail.id);
     }
   }
 
-  return createUser(db, {
+  const newUser = await createUser(db, {
     id: data.id,
     appleEmail: data.appleEmail,
     name: data.name,
   });
+  log("info", "New user created via findOrCreate", { userId: newUser.id });
+  return newUser;
 }
