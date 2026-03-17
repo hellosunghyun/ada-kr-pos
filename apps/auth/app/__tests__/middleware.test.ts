@@ -1,12 +1,13 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { createTestSession } from "./setup";
-import { validateCsrf } from "~/middleware/csrf.server";
-import {
-  requireAuthPage,
-  requireAuthApi,
-  optionalAuth,
-} from "~/middleware/auth.server";
 import type { AppLoadContext } from "react-router";
+import { beforeEach, describe, expect, it } from "vitest";
+import { createLogger } from "~/lib/logger.server";
+import {
+  optionalAuth,
+  requireAuthApi,
+  requireAuthPage,
+} from "~/middleware/auth.server";
+import { validateCsrf } from "~/middleware/csrf.server";
+import { createTestSession } from "./setup";
 
 function createMockKV(): KVNamespace {
   const store = new Map<string, string>();
@@ -50,11 +51,12 @@ function makeContext(kv: KVNamespace, d1: D1Database): AppLoadContext {
         APPLE_PRIVATE_KEY: "test-private-key",
         RESEND_API_KEY: "test-resend-key",
         AUTH_SECRET: "test-auth-secret",
-         COOKIE_DOMAIN: ".ada-kr-pos.com",
+        COOKIE_DOMAIN: ".ada-kr-pos.com",
       },
       ctx: {} as ExecutionContext,
     },
-  } as any;
+    logger: createLogger(),
+  };
 }
 
 describe("CSRF Validation", () => {
@@ -180,7 +182,9 @@ describe("Auth Middleware", () => {
       } catch (e) {
         if (e instanceof Response) {
           expect(e.status).toBe(302);
-          expect(e.headers.get("Location")).toBe("/login");
+          expect(e.headers.get("Location")).toBe(
+            "/login?callbackUrl=https%3A%2F%2Fexample.com%2Fdashboard",
+          );
         } else {
           throw e;
         }
@@ -201,7 +205,9 @@ describe("Auth Middleware", () => {
       } catch (e) {
         if (e instanceof Response) {
           expect(e.status).toBe(302);
-          expect(e.headers.get("Location")).toBe("/login");
+          expect(e.headers.get("Location")).toBe(
+            "/login?callbackUrl=https%3A%2F%2Fexample.com%2Fdashboard",
+          );
         } else {
           throw e;
         }
@@ -224,7 +230,9 @@ describe("Auth Middleware", () => {
       } catch (e) {
         if (e instanceof Response) {
           expect(e.status).toBe(302);
-          expect(e.headers.get("Location")).toBe("/login");
+          expect(e.headers.get("Location")).toBe(
+            "/login?callbackUrl=https%3A%2F%2Fexample.com%2Fdashboard",
+          );
         } else {
           throw e;
         }

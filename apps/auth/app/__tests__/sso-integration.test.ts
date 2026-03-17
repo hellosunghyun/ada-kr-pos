@@ -1,10 +1,15 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import type { AppLoadContext } from "react-router";
 import { env } from "cloudflare:workers";
+import type { AppLoadContext } from "react-router";
+import { beforeEach, describe, expect, it } from "vitest";
 import { createDb } from "~/db/index";
 import { developerApps } from "~/db/schema";
-import { generateApiKey, getApiKeyPrefix, hashApiKey } from "~/lib/apikey.server";
+import {
+  generateApiKey,
+  getApiKeyPrefix,
+  hashApiKey,
+} from "~/lib/apikey.server";
 import { setSessionCookie } from "~/lib/cookie.server";
+import { createLogger } from "~/lib/logger.server";
 import { createSession, getSession } from "~/lib/session.server";
 import { createUser } from "~/lib/user.server";
 import { action as logoutAction } from "~/routes/api.auth.logout";
@@ -54,7 +59,8 @@ function makeContext(): AppLoadContext {
       env: bindings,
       ctx: {} as ExecutionContext,
     },
-  } as AppLoadContext;
+    logger: createLogger(),
+  };
 }
 
 async function resetTables() {
@@ -74,19 +80,27 @@ describe("SSO integration", () => {
     context = makeContext();
   });
 
-   it("adapts cookie domain based on environment value", () => {
-     const expiresAt = Date.now() + 60 * 60 * 1000;
+  it("adapts cookie domain based on environment value", () => {
+    const expiresAt = Date.now() + 60 * 60 * 1000;
 
-     const prodCookie = setSessionCookie("session-prod", expiresAt, ".ada-kr-pos.com");
-     const localCookie = setSessionCookie("session-local", expiresAt, "");
+    const prodCookie = setSessionCookie(
+      "session-prod",
+      expiresAt,
+      ".ada-kr-pos.com",
+    );
+    const localCookie = setSessionCookie("session-local", expiresAt, "");
 
-     expect(prodCookie).toContain("Domain=.ada-kr-pos.com");
-     expect(localCookie).not.toContain("Domain=");
-   });
+    expect(prodCookie).toContain("Domain=.ada-kr-pos.com");
+    expect(localCookie).not.toContain("Domain=");
+  });
 
-   it("sets SSO-safe cookie attributes", () => {
-     const expiresAt = Date.now() + 60 * 60 * 1000;
-     const cookie = setSessionCookie("session-attrs", expiresAt, ".ada-kr-pos.com");
+  it("sets SSO-safe cookie attributes", () => {
+    const expiresAt = Date.now() + 60 * 60 * 1000;
+    const cookie = setSessionCookie(
+      "session-attrs",
+      expiresAt,
+      ".ada-kr-pos.com",
+    );
 
     expect(cookie).toContain("HttpOnly");
     expect(cookie).toContain("Secure");
@@ -129,7 +143,11 @@ describe("SSO integration", () => {
       body: JSON.stringify({ sessionId }),
     });
 
-    const response = await verifySessionAction({ request, context, params: {} } as any);
+    const response = await verifySessionAction({
+      request,
+      context,
+      params: {},
+    } as Parameters<typeof verifySessionAction>[0]);
     expect(response.status).toBe(200);
 
     const body = (await response.json()) as {
@@ -155,13 +173,13 @@ describe("SSO integration", () => {
         expiresAt: oldExpiresAt,
         createdAt: now - ttlMs / 2 - 1000,
       }),
-      { expirationTtl: 60 }
+      { expirationTtl: 60 },
     );
 
     const session = await getSession(bindings.SESSIONS, sessionId);
 
     expect(session).not.toBeNull();
-    expect(session!.expiresAt).toBeGreaterThan(oldExpiresAt);
+    expect(session?.expiresAt).toBeGreaterThan(oldExpiresAt);
   });
 
   it("deletes KV session on logout", async () => {
@@ -170,12 +188,17 @@ describe("SSO integration", () => {
 
     const request = new Request("https://example.com/api/auth/logout", {
       method: "POST",
+      body: new URLSearchParams(),
       headers: {
         Cookie: `adakrpos_session=${sessionId}`,
       },
     });
 
-    const response = await logoutAction({ request, context, params: {} } as any);
+    const response = await logoutAction({
+      request,
+      context,
+      params: {},
+    } as Parameters<typeof logoutAction>[0]);
     const stored = await bindings.SESSIONS.get(`session:${sessionId}`);
 
     expect(response.status).toBe(302);

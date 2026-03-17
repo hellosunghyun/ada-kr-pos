@@ -9,7 +9,6 @@ import {
   verifyUserEmail,
 } from "~/lib/user.server";
 import { optionalAuth } from "~/middleware/auth.server";
-import type { Env } from "~/types/env";
 
 async function resolveUserId(
   request: Request,
@@ -42,6 +41,7 @@ async function resolveUserId(
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const { logger = createLogger() } = context;
+  const auth = await optionalAuth(request, context);
 
   const url = new URL(request.url);
   const token = url.searchParams.get("token");
@@ -50,14 +50,14 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   if (!token || !email) {
     return Response.json(
       { error: "Invalid or expired token" },
-      { status: 400 },
+      { status: 400, headers: { "Cache-Control": "no-store" } },
     );
   }
 
-  const env = (context as any).cloudflare.env as Env;
+  const env = context.cloudflare.env;
 
   logger.info("Email verification confirmation attempt", {
-    userId: (context as any).user?.id,
+    userId: auth.isAuthenticated ? auth.user.id : undefined,
   });
 
   const isValid = await validateVerificationToken(
@@ -69,7 +69,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   if (!isValid) {
     return Response.json(
       { error: "Invalid or expired token" },
-      { status: 400 },
+      { status: 400, headers: { "Cache-Control": "no-store" } },
     );
   }
 

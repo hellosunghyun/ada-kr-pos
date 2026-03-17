@@ -26,5 +26,8 @@ export async function action({ request, context }: ActionFunctionArgs) {
       throw error;
     });
 
-  return Response.json({ success: true });
+  return Response.json(
+    { success: true },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }

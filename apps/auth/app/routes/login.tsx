@@ -11,6 +11,10 @@ interface ActionData {
   error?: string;
 }
 
+export function headers() {
+  return { "Cache-Control": "private, no-cache" };
+}
+
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const callbackUrl = url.searchParams.get("callbackUrl");
