@@ -3,6 +3,10 @@ import { type LogLevel, createLogger } from "~/lib/logger.server";
 import type { Env } from "~/types/env";
 
 declare global {
+  interface CacheStorage {
+    default: Cache;
+  }
+
   interface CloudflareEnvironment extends Env {}
 }
 
@@ -23,6 +27,23 @@ export default {
       requestId,
       (env.LOG_LEVEL as LogLevel) ?? "info",
     );
+
+    if (request.method === "GET" && pathname === "/__manifest") {
+      const cache = caches.default;
+      const cacheKey = new Request(request.url, { method: "GET" });
+      const cachedResponse = await cache.match(cacheKey);
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+      const freshResponse = await requestHandler(request, {
+        cloudflare: { env, ctx },
+        logger,
+      });
+      if (freshResponse.ok) {
+        ctx.waitUntil(cache.put(cacheKey, freshResponse.clone()));
+      }
+      return freshResponse;
+    }
 
     let response: Response | undefined;
     let status = 500;

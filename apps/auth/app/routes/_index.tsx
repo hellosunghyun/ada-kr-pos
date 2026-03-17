@@ -1,10 +1,10 @@
 import type { LoaderFunctionArgs } from "react-router";
 import { redirect } from "react-router";
-import { optionalAuth } from "~/middleware/auth.server";
 
-export async function loader({ request, context }: LoaderFunctionArgs) {
-  const auth = await optionalAuth(request, context);
-  if (auth.isAuthenticated) {
+export async function loader({ request }: LoaderFunctionArgs) {
+  const cookieHeader = request.headers.get("Cookie") ?? "";
+  const hasSession = cookieHeader.includes("adakrpos_session=");
+  if (hasSession) {
     throw redirect("/mypage");
   }
   throw redirect("/login");
