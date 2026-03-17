@@ -43,6 +43,14 @@ export function headers() {
   return { "Cache-Control": "private, no-store" };
 }
 
+export function HydrateFallback() {
+  return (
+    <div className="developer-container">
+      <p>로딩 중...</p>
+    </div>
+  );
+}
+
 export async function loader({
   request,
   context,

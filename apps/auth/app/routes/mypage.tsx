@@ -32,6 +32,14 @@ export function headers() {
   return { "Cache-Control": "private, no-store" };
 }
 
+export function HydrateFallback() {
+  return (
+    <div className="mypage-container">
+      <p>로딩 중...</p>
+    </div>
+  );
+}
+
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const auth = await requireAuthPage(request, context);
   const env = context.cloudflare.env;

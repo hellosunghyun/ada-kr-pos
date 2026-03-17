@@ -44,6 +44,9 @@ importers:
       react-router:
         specifier: ^7.4.0
         version: 7.13.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      web-vitals:
+        specifier: ^5.1.0
+        version: 5.1.0
     devDependencies:
       '@cloudflare/vite-plugin':
         specifier: ^1.28.0
@@ -2180,6 +2183,9 @@ packages:
       jsdom:
         optional: true
 
+  web-vitals@5.1.0:
+    resolution: {integrity: sha512-ArI3kx5jI0atlTtmV0fWU3fjpLmq/nD3Zr1iFFlJLaqa5wLBkUSzINwBPySCX/8jRyjlmy1Volw1kz1g9XE4Jg==}
+
   why-is-node-running@2.3.0:
     resolution: {integrity: sha512-hUrmaWBdVDcxvYqnyh09zunKzROWjbZTiNy8dBEjkS7ehEDQibXJ7XvlmtbwuTclUiIyN+CyXQD4Vmko8fNm8w==}
     engines: {node: '>=8'}
@@ -3892,6 +3898,8 @@ snapshots:
       why-is-node-running: 2.3.0
     transitivePeerDependencies:
       - msw
+
+  web-vitals@5.1.0: {}
 
   why-is-node-running@2.3.0:
     dependencies:
