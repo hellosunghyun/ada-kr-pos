@@ -1,3 +1,4 @@
+import { buildVerificationEmailHtml } from "~/lib/email-templates.server";
 import { log, maskEmail } from "~/lib/logger.server";
 
 const VERIFICATION_TOKEN_TTL_SECONDS = 24 * 60 * 60;
@@ -68,7 +69,7 @@ export async function sendVerificationEmail(
       from: "noreply@ada-kr-pos.com",
       to: toEmail,
       subject: "ADA Auth — 이메일 인증",
-      html: `<p>인증 링크: <a href="${verifyUrl}">인증하기</a></p>`,
+      html: buildVerificationEmailHtml(verifyUrl),
     }),
   });
   const duration = Date.now() - start;

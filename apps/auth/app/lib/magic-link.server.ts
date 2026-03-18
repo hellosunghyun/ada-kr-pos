@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import type { createDb } from "~/db/index";
 import { users } from "~/db/schema";
+import { buildMagicLinkEmailHtml } from "~/lib/email-templates.server";
 import { log, maskEmail } from "~/lib/logger.server";
 import { createSession } from "~/lib/session.server";
 import { getUserByEmail, getUserByVerifiedEmail } from "~/lib/user.server";
@@ -66,7 +67,7 @@ export async function sendMagicLink(
       from: "noreply@ada-kr-pos.com",
       to: normalizedEmail,
       subject: "ADA Auth — 매직 링크 로그인",
-      html: `<p>로그인 링크: <a href="${verifyUrl}">로그인하기</a></p>`,
+      html: buildMagicLinkEmailHtml(verifyUrl),
     }),
   });
   const duration = Date.now() - start;
