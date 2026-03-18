@@ -11,7 +11,6 @@ import {
 import { maskApiKey } from "~/lib/logger.server";
 import { requireAuthApi } from "~/middleware/auth.server";
 import { validateCsrf } from "~/middleware/csrf.server";
-import type { Env } from "~/types/env";
 
 export async function action({ request, context, params }: ActionFunctionArgs) {
   const method = request.method.toUpperCase();
@@ -26,19 +25,25 @@ export async function action({ request, context, params }: ActionFunctionArgs) {
     effectiveMethod !== "PATCH" &&
     effectiveMethod !== "REGENERATE"
   ) {
-    return new Response("Method Not Allowed", { status: 405 });
+    return new Response("Method Not Allowed", {
+      status: 405,
+      headers: { "Cache-Control": "no-store" },
+    });
   }
 
   await validateCsrf(request);
   const auth = await requireAuthApi(request, context);
 
-  const { logger } = context as any;
-  const env = (context as any).cloudflare.env as Env;
+  const { logger } = context;
+  const env = context.cloudflare.env;
   const db = createDb(env.DB);
   const appId = params.id;
 
   if (!appId) {
-    return Response.json({ error: "App ID is required" }, { status: 400 });
+    return Response.json(
+      { error: "App ID is required" },
+      { status: 400, headers: { "Cache-Control": "no-store" } },
+    );
   }
 
   const existing = await db
@@ -50,7 +55,10 @@ export async function action({ request, context, params }: ActionFunctionArgs) {
     .get();
 
   if (!existing) {
-    return Response.json({ error: "App not found" }, { status: 404 });
+    return Response.json(
+      { error: "App not found" },
+      { status: 404, headers: { "Cache-Control": "no-store" } },
+    );
   }
 
   if (effectiveMethod === "DELETE") {
@@ -85,15 +93,18 @@ export async function action({ request, context, params }: ActionFunctionArgs) {
       newPrefix: maskApiKey(apiKey),
     });
 
-    return Response.json({
-      app: {
-        id: appId,
-        name: existing.name,
-        apiKeyPrefix,
-        apiKey,
+    return Response.json(
+      {
+        app: {
+          id: appId,
+          name: existing.name,
+          apiKeyPrefix,
+          apiKey,
+        },
+        success: true,
       },
-      success: true,
-    });
+      { headers: { "Cache-Control": "no-store" } },
+    );
   }
 
   const body = (await request.json()) as {
@@ -110,7 +121,7 @@ export async function action({ request, context, params }: ActionFunctionArgs) {
     if (body.name.trim().length === 0) {
       return Response.json(
         { error: "App name cannot be empty" },
-        { status: 400 },
+        { status: 400, headers: { "Cache-Control": "no-store" } },
       );
     }
     updates.name = body.name.trim();
@@ -131,13 +142,16 @@ export async function action({ request, context, params }: ActionFunctionArgs) {
 
   logger.info("Developer app updated", { userId: auth.user.id, appId });
 
-  return Response.json({
-    app: {
-      id: appId,
-      name: updates.name ?? existing.name,
-      description: updates.description ?? existing.description,
-      isActive: updates.isActive ?? existing.isActive,
-      updatedAt: (updates.updatedAt as Date).getTime(),
+  return Response.json(
+    {
+      app: {
+        id: appId,
+        name: updates.name ?? existing.name,
+        description: updates.description ?? existing.description,
+        isActive: updates.isActive ?? existing.isActive,
+        updatedAt: (updates.updatedAt as Date).getTime(),
+      },
     },
-  });
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }

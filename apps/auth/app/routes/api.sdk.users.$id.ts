@@ -9,6 +9,7 @@ export async function loader({ request, context, params }: LoaderFunctionArgs) {
   const auth = await requireSdkApiKey(request, context);
 
   if (auth instanceof Response) {
+    auth.headers.set("Cache-Control", "no-store");
     return auth;
   }
 
@@ -17,17 +18,23 @@ export async function loader({ request, context, params }: LoaderFunctionArgs) {
   logger.info("SDK user lookup", { targetUserId: userId });
 
   if (!userId) {
-    return Response.json({ error: "User ID is required" }, { status: 400 });
+    return Response.json(
+      { error: "User ID is required" },
+      { status: 400, headers: { "Cache-Control": "no-store" } },
+    );
   }
 
   const user = await getUserById(auth.db, userId);
 
   if (!user) {
     logger.warn("User not found", { targetUserId: userId });
-    return Response.json({ error: "User not found" }, { status: 404 });
+    return Response.json(
+      { error: "User not found" },
+      { status: 404, headers: { "Cache-Control": "no-store" } },
+    );
   }
 
   logger.info("User found", { targetUserId: userId });
 
-  return Response.json(user);
+  return Response.json(user, { headers: { "Cache-Control": "no-store" } });
 }

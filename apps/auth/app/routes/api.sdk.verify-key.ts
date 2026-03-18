@@ -4,7 +4,10 @@ import { requireSdkApiKey } from "~/lib/rate-limit.server";
 
 export async function action({ request, context }: ActionFunctionArgs) {
   if (request.method !== "POST") {
-    return new Response("Method Not Allowed", { status: 405 });
+    return new Response("Method Not Allowed", {
+      status: 405,
+      headers: { "Cache-Control": "no-store" },
+    });
   }
 
   const { logger = createLogger() } = context;
@@ -14,9 +17,13 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
   if (auth instanceof Response) {
     logger.warn("SDK key verification failed");
+    auth.headers.set("Cache-Control", "no-store");
     return auth;
   }
 
   logger.info("SDK key verification successful");
-  return Response.json({ valid: true });
+  return Response.json(
+    { valid: true },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }

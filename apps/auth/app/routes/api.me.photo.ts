@@ -4,18 +4,20 @@ import { createLogger } from "~/lib/logger.server";
 import { updateProfilePhoto } from "~/lib/user.server";
 import { requireAuthApi } from "~/middleware/auth.server";
 import { validateCsrf } from "~/middleware/csrf.server";
-import type { Env } from "~/types/env";
 
 export async function action({ request, context }: ActionFunctionArgs) {
   if (request.method !== "POST") {
-    return new Response("Method Not Allowed", { status: 405 });
+    return new Response("Method Not Allowed", {
+      status: 405,
+      headers: { "Cache-Control": "no-store" },
+    });
   }
 
   await validateCsrf(request);
 
   const auth = await requireAuthApi(request, context);
   const { logger = createLogger() } = context;
-  const env = (context as any).cloudflare.env as Env;
+  const env = context.cloudflare.env;
   const db = createDb(env.DB);
   const r2 = env.PROFILE_PHOTOS;
 
@@ -23,7 +25,10 @@ export async function action({ request, context }: ActionFunctionArgs) {
   const file = formData.get("photo");
 
   if (!(file instanceof File)) {
-    return Response.json({ error: "No file" }, { status: 400 });
+    return Response.json(
+      { error: "No file" },
+      { status: 400, headers: { "Cache-Control": "no-store" } },
+    );
   }
 
   logger.info("Profile photo upload attempted", { userId: auth.user.id });
@@ -38,5 +43,8 @@ export async function action({ request, context }: ActionFunctionArgs) {
   const updated = await updateProfilePhoto(db, auth.user.id, photoUrl);
   logger.info("Profile photo uploaded", { userId: auth.user.id });
 
-  return Response.json({ user: updated, photoUrl });
+  return Response.json(
+    { user: updated, photoUrl },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }

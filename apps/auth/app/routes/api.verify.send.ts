@@ -7,7 +7,6 @@ import {
 import { createLogger, maskEmail } from "~/lib/logger.server";
 import { requireAuthApi } from "~/middleware/auth.server";
 import { validateCsrf } from "~/middleware/csrf.server";
-import type { Env } from "~/types/env";
 
 function isVerifiedDomainEmail(email: string): boolean {
   return email.endsWith("@pos.idserve.net");
@@ -15,11 +14,14 @@ function isVerifiedDomainEmail(email: string): boolean {
 
 export async function action({ request, context }: ActionFunctionArgs) {
   if (request.method !== "POST") {
-    return new Response("Method Not Allowed", { status: 405 });
+    return new Response("Method Not Allowed", {
+      status: 405,
+      headers: { "Cache-Control": "no-store" },
+    });
   }
 
   await validateCsrf(request);
-  await requireAuthApi(request, context);
+  const auth = await requireAuthApi(request, context);
 
   const { logger = createLogger() } = context;
 
@@ -37,18 +39,24 @@ export async function action({ request, context }: ActionFunctionArgs) {
   }
 
   if (!email) {
-    return Response.json({ error: "Email required" }, { status: 400 });
+    return Response.json(
+      { error: "Email required" },
+      { status: 400, headers: { "Cache-Control": "no-store" } },
+    );
   }
 
   if (!isVerifiedDomainEmail(email)) {
-    return Response.json({ error: "Invalid email domain" }, { status: 400 });
+    return Response.json(
+      { error: "Invalid email domain" },
+      { status: 400, headers: { "Cache-Control": "no-store" } },
+    );
   }
 
-  const env = (context as any).cloudflare.env as Env;
+  const env = context.cloudflare.env;
   const token = generateVerificationToken();
 
   logger.info("Email verification requested", {
-    userId: (context as any).user?.id,
+    userId: auth.user.id,
     email: maskEmail(email),
   });
 
@@ -56,11 +64,11 @@ export async function action({ request, context }: ActionFunctionArgs) {
   await sendVerificationEmail(env.RESEND_API_KEY, email, token);
 
   logger.info("Verification email dispatched", {
-    userId: (context as any).user?.id,
+    userId: auth.user.id,
   });
 
-  return Response.json({
-    success: true,
-    message: "인증 이메일을 발송했습니다",
-  });
+  return Response.json(
+    { success: true, message: "인증 이메일을 발송했습니다" },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }

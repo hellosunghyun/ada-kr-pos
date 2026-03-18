@@ -34,7 +34,10 @@ export async function action({ request, context }: ActionFunctionArgs) {
     if (!code || !state) {
       return new Response(JSON.stringify({ error: "Missing code or state" }), {
         status: 400,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Cache-Control": "no-store",
+          "Content-Type": "application/json",
+        },
       });
     }
 
@@ -44,7 +47,10 @@ export async function action({ request, context }: ActionFunctionArgs) {
         JSON.stringify({ error: "Invalid or expired state" }),
         {
           status: 400,
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Cache-Control": "no-store",
+            "Content-Type": "application/json",
+          },
         },
       );
     }
@@ -108,5 +114,8 @@ export async function action({ request, context }: ActionFunctionArgs) {
 }
 
 export async function loader() {
-  return new Response("Method not allowed", { status: 405 });
+  return new Response("Method not allowed", {
+    status: 405,
+    headers: { "Cache-Control": "no-store" },
+  });
 }

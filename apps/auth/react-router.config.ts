@@ -5,6 +5,7 @@ export default {
   future: {
     unstable_optimizeDeps: true,
     v8_viteEnvironmentApi: true,
+    v8_splitRouteModules: true,
   },
   appDirectory: "app",
 } satisfies Config;

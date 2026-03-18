@@ -5,7 +5,10 @@ import { validateCsrf } from "~/middleware/csrf.server";
 
 export async function action({ request, context }: ActionFunctionArgs) {
   if (request.method !== "POST") {
-    return new Response("Method Not Allowed", { status: 405 });
+    return new Response("Method Not Allowed", {
+      status: 405,
+      headers: { "Cache-Control": "no-store" },
+    });
   }
 
   await validateCsrf(request);
@@ -20,7 +23,10 @@ export async function action({ request, context }: ActionFunctionArgs) {
     typeof body.callbackUrl === "string" ? body.callbackUrl : undefined;
 
   if (!email) {
-    return Response.json({ error: "Email required" }, { status: 400 });
+    return Response.json(
+      { error: "Email required" },
+      { status: 400, headers: { "Cache-Control": "no-store" } },
+    );
   }
 
   const env = context.cloudflare.env;
@@ -41,18 +47,21 @@ export async function action({ request, context }: ActionFunctionArgs) {
       error instanceof Error &&
       error.message === "Invalid email domain. Only @pos.idserve.net allowed."
     ) {
-      return Response.json({ error: error.message }, { status: 400 });
+      return Response.json(
+        { error: error.message },
+        { status: 400, headers: { "Cache-Control": "no-store" } },
+      );
     }
 
     logger.error("Magic link send failed", { error });
     return Response.json(
       { error: "이메일 전송에 실패했습니다." },
-      { status: 500 },
+      { status: 500, headers: { "Cache-Control": "no-store" } },
     );
   }
 
-  return Response.json({
-    success: true,
-    message: "매직링크를 발송했습니다",
-  });
+  return Response.json(
+    { success: true, message: "매직링크를 발송했습니다" },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }

@@ -10,7 +10,6 @@ import {
 import { maskApiKey } from "~/lib/logger.server";
 import { requireAuthApi } from "~/middleware/auth.server";
 import { validateCsrf } from "~/middleware/csrf.server";
-import type { Env } from "~/types/env";
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const auth = await requireAuthApi(request, context);
@@ -18,12 +17,12 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   if (!auth.user.isVerified) {
     return Response.json(
       { error: "Email verification required" },
-      { status: 403 },
+      { status: 403, headers: { "Cache-Control": "no-store" } },
     );
   }
 
-  const { logger } = context as any;
-  const env = (context as any).cloudflare.env as Env;
+  const { logger } = context;
+  const env = context.cloudflare.env;
   const db = createDb(env.DB);
 
   const apps = await db
@@ -45,18 +44,24 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
     count: apps.length,
   });
 
-  return Response.json({
-    apps: apps.map((app) => ({
-      ...app,
-      createdAt: app.createdAt.getTime(),
-      updatedAt: app.updatedAt.getTime(),
-    })),
-  });
+  return Response.json(
+    {
+      apps: apps.map((app) => ({
+        ...app,
+        createdAt: app.createdAt.getTime(),
+        updatedAt: app.updatedAt.getTime(),
+      })),
+    },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }
 
 export async function action({ request, context }: ActionFunctionArgs) {
   if (request.method !== "POST") {
-    return new Response("Method Not Allowed", { status: 405 });
+    return new Response("Method Not Allowed", {
+      status: 405,
+      headers: { "Cache-Control": "no-store" },
+    });
   }
 
   await validateCsrf(request);
@@ -65,12 +70,12 @@ export async function action({ request, context }: ActionFunctionArgs) {
   if (!auth.user.isVerified) {
     return Response.json(
       { error: "Email verification required" },
-      { status: 403 },
+      { status: 403, headers: { "Cache-Control": "no-store" } },
     );
   }
 
-  const { logger } = context as any;
-  const env = (context as any).cloudflare.env as Env;
+  const { logger } = context;
+  const env = context.cloudflare.env;
   const db = createDb(env.DB);
 
   const body = (await request.json()) as {
@@ -79,7 +84,10 @@ export async function action({ request, context }: ActionFunctionArgs) {
   };
 
   if (!body.name || body.name.trim().length === 0) {
-    return Response.json({ error: "App name is required" }, { status: 400 });
+    return Response.json(
+      { error: "App name is required" },
+      { status: 400, headers: { "Cache-Control": "no-store" } },
+    );
   }
 
   const apiKey = generateApiKey();
@@ -106,16 +114,19 @@ export async function action({ request, context }: ActionFunctionArgs) {
     apiKeyPrefix: maskApiKey(apiKey),
   });
 
-  return Response.json({
-    app: {
-      id: appId,
-      name: body.name.trim(),
-      description: body.description?.trim() || null,
-      apiKeyPrefix,
-      apiKey, // Full key shown ONCE
-      isActive: true,
-      createdAt: now.getTime(),
-      updatedAt: now.getTime(),
+  return Response.json(
+    {
+      app: {
+        id: appId,
+        name: body.name.trim(),
+        description: body.description?.trim() || null,
+        apiKeyPrefix,
+        apiKey, // Full key shown ONCE
+        isActive: true,
+        createdAt: now.getTime(),
+        updatedAt: now.getTime(),
+      },
     },
-  });
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }

@@ -18,7 +18,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
   if (!token) {
     return Response.json(
       { error: "Invalid or expired magic link" },
-      { status: 400 },
+      { status: 400, headers: { "Cache-Control": "no-store" } },
     );
   }
 
@@ -46,7 +46,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
     logger.debug("Magic link verification failed", { error });
     return Response.json(
       { error: "Invalid or expired magic link" },
-      { status: 400 },
+      { status: 400, headers: { "Cache-Control": "no-store" } },
     );
   }
 }

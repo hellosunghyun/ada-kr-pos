@@ -10,7 +10,6 @@ import {
 } from "~/lib/apikey.server";
 import { requireAuthPage } from "~/middleware/auth.server";
 import { validateCsrf } from "~/middleware/csrf.server";
-import type { Env } from "~/types/env";
 
 interface DeveloperApp {
   id: string;
@@ -40,6 +39,18 @@ interface ActionData {
   success?: boolean;
 }
 
+export function headers() {
+  return { "Cache-Control": "private, no-store" };
+}
+
+export function HydrateFallback() {
+  return (
+    <div className="developer-container">
+      <p>로딩 중...</p>
+    </div>
+  );
+}
+
 export async function loader({
   request,
   context,
@@ -50,7 +61,7 @@ export async function loader({
     return { user: auth.user, apps: [] };
   }
 
-  const env = (context as any).cloudflare.env as Env;
+  const env = context.cloudflare.env;
   const db = createDb(env.DB);
 
   const apps = await db
@@ -88,7 +99,7 @@ export async function action({
     return { error: "Email verification required" };
   }
 
-  const env = (context as any).cloudflare.env as Env;
+  const env = context.cloudflare.env;
   const db = createDb(env.DB);
 
   const formData = await request.formData();
@@ -173,7 +184,7 @@ export default function DeveloperPortal() {
             type="button"
             className="btn-copy"
             onClick={() => {
-              navigator.clipboard.writeText(revealedApp.apiKey!);
+              navigator.clipboard.writeText(revealedApp.apiKey ?? "");
             }}
           >
             복사
@@ -483,7 +494,9 @@ https://ada-kr-pos.com/api/auth/logout?callbackUrl=https://your-app.ada-kr-pos.c
             <p>
               모든 API 요청에 <code>Authorization</code> 헤더를 포함하세요.
             </p>
-            <pre className="docs-code">{`Authorization: Bearer ak_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`}</pre>
+            <pre className="docs-code">
+              Authorization: Bearer ak_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+            </pre>
             <p>
               API 키가 유효하지 않거나 비활성 상태이면 <code>401</code> 또는{" "}
               <code>403</code>을 반환합니다. SDK는 무효한 키를 30초간 캐시하여
@@ -546,7 +559,7 @@ https://ada-kr-pos.com/api/auth/logout?callbackUrl=https://your-app.ada-kr-pos.c
           <summary className="docs-group-title">SDK — @adakrpos/auth</summary>
           <div className="docs-content">
             <h4>설치</h4>
-            <pre className="docs-code">{`npm install @adakrpos/auth`}</pre>
+            <pre className="docs-code">npm install @adakrpos/auth</pre>
 
             <p>SDK는 4개의 진입점을 제공합니다:</p>
             <pre className="docs-code">{`@adakrpos/auth          — 코어 클라이언트 (모든 환경)
@@ -882,7 +895,9 @@ clearApiKeyCache(); // 캐시된 키 유효성 초기화`}</pre>
               파라미터를 사용하면 로그인 완료 후 원래 페이지로 자동
               리다이렉트됩니다.
             </p>
-            <pre className="docs-code">{`https://ada-kr-pos.com/login?callbackUrl=https://your-app.ada-kr-pos.com/current-page`}</pre>
+            <pre className="docs-code">
+              https://ada-kr-pos.com/login?callbackUrl=https://your-app.ada-kr-pos.com/current-page
+            </pre>
 
             <h4>보안 제한</h4>
             <p>

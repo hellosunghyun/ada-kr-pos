@@ -7,7 +7,6 @@ import { isAllowedCallbackUrl } from "~/lib/callback.server";
 import { updateProfilePhoto, updateUserProfile } from "~/lib/user.server";
 import { requireAuthPage } from "~/middleware/auth.server";
 import { validateCsrf } from "~/middleware/csrf.server";
-import type { Env } from "~/types/env";
 
 interface ActionData {
   user?: {
@@ -29,9 +28,21 @@ interface ActionData {
   error?: string;
 }
 
+export function headers() {
+  return { "Cache-Control": "private, no-store" };
+}
+
+export function HydrateFallback() {
+  return (
+    <div className="mypage-container">
+      <p>로딩 중...</p>
+    </div>
+  );
+}
+
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const auth = await requireAuthPage(request, context);
-  const env = (context as any).cloudflare.env as Env;
+  const env = context.cloudflare.env;
   const db = createDb(env.DB);
   const row = await db
     .select({ appleSub: users.appleSub })
@@ -57,7 +68,7 @@ export async function action({
 }: ActionFunctionArgs): Promise<ActionData> {
   await validateCsrf(request);
   const auth = await requireAuthPage(request, context);
-  const env = (context as any).cloudflare.env as Env;
+  const env = context.cloudflare.env;
   const db = createDb(env.DB);
 
   const contentType = request.headers.get("Content-Type") ?? "";

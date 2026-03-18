@@ -1,14 +1,14 @@
 import {
+  Form,
   Links,
   Meta,
+  NavLink,
   Outlet,
   Scripts,
   ScrollRestoration,
-  NavLink,
-  useRouteLoaderData,
-  Form,
-  useRouteError,
   isRouteErrorResponse,
+  useRouteError,
+  useRouteLoaderData,
 } from "react-router";
 import type { LinksFunction, LoaderFunctionArgs } from "react-router";
 import globalCss from "~/styles/global.css?url";
@@ -16,6 +16,14 @@ import globalCss from "~/styles/global.css?url";
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: globalCss },
 ];
+
+export function headers() {
+  return {
+    "Cache-Control": "private, no-cache",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+  };
+}
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const cookieHeader = request.headers.get("Cookie") ?? "";
@@ -49,7 +57,7 @@ export default function App() {
     <div className="app-container">
       <header className="site-header">
         <div className="header-inner">
-          <NavLink to="/" className="site-logo">
+          <NavLink to="/" prefetch="intent" className="site-logo">
             PORTAL
           </NavLink>
           <nav className="site-nav" aria-label="Main navigation">
@@ -57,6 +65,7 @@ export default function App() {
               <>
                 <NavLink
                   to="/mypage"
+                  prefetch="intent"
                   className={({ isActive }) =>
                     `nav-link${isActive ? " active" : ""}`
                   }
@@ -65,6 +74,7 @@ export default function App() {
                 </NavLink>
                 <NavLink
                   to="/developer"
+                  prefetch="intent"
                   className={({ isActive }) =>
                     `nav-link${isActive ? " active" : ""}`
                   }
@@ -84,6 +94,7 @@ export default function App() {
             ) : (
               <NavLink
                 to="/login"
+                prefetch="intent"
                 className={({ isActive }) =>
                   `nav-link${isActive ? " active" : ""}`
                 }
@@ -98,7 +109,11 @@ export default function App() {
         <Outlet />
       </main>
       <footer className="site-footer">
-        <p>본 서비스는 구성원이 만든 비공식 서비스이며,<br />Apple Developer Academy @ POSTECH와 공식적인 관련이 없습니다.</p>
+        <p>
+          본 서비스는 구성원이 만든 비공식 서비스이며,
+          <br />
+          Apple Developer Academy @ POSTECH와 공식적인 관련이 없습니다.
+        </p>
       </footer>
     </div>
   );
@@ -113,7 +128,7 @@ export function ErrorBoundary() {
         <div className="app-container">
           <header className="site-header">
             <div className="header-inner">
-              <NavLink to="/" className="site-logo">
+              <NavLink to="/" prefetch="intent" className="site-logo">
                 PORTAL
               </NavLink>
             </div>
@@ -122,13 +137,17 @@ export function ErrorBoundary() {
             <div className="error-page">
               <h1>페이지를 찾을 수 없습니다</h1>
               <p>요청하신 페이지가 존재하지 않습니다.</p>
-              <NavLink to="/" className="btn btn-primary">
+              <NavLink to="/" prefetch="intent" className="btn btn-primary">
                 홈으로 돌아가기
               </NavLink>
             </div>
           </main>
           <footer className="site-footer">
-            <p>본 서비스는 구성원이 만든 비공식 서비스이며,<br />Apple Developer Academy @ POSTECH와 공식적인 관련이 없습니다.</p>
+            <p>
+              본 서비스는 구성원이 만든 비공식 서비스이며,
+              <br />
+              Apple Developer Academy @ POSTECH와 공식적인 관련이 없습니다.
+            </p>
           </footer>
         </div>
       );
@@ -138,7 +157,7 @@ export function ErrorBoundary() {
       <div className="app-container">
         <header className="site-header">
           <div className="header-inner">
-            <NavLink to="/" className="site-logo">
+            <NavLink to="/" prefetch="intent" className="site-logo">
               PORTAL
             </NavLink>
           </div>
@@ -147,13 +166,17 @@ export function ErrorBoundary() {
           <div className="error-page">
             <h1>오류가 발생했습니다</h1>
             <p>요청을 처리하는 중에 오류가 발생했습니다.</p>
-            <NavLink to="/" className="btn btn-primary">
+            <NavLink to="/" prefetch="intent" className="btn btn-primary">
               홈으로 돌아가기
             </NavLink>
           </div>
         </main>
         <footer className="site-footer">
-          <p>본 서비스는 구성원이 만든 비공식 서비스이며,<br />Apple Developer Academy @ POSTECH와 공식적인 관련이 없습니다.</p>
+          <p>
+            본 서비스는 구성원이 만든 비공식 서비스이며,
+            <br />
+            Apple Developer Academy @ POSTECH와 공식적인 관련이 없습니다.
+          </p>
         </footer>
       </div>
     );
@@ -163,7 +186,7 @@ export function ErrorBoundary() {
     <div className="app-container">
       <header className="site-header">
         <div className="header-inner">
-          <NavLink to="/" className="site-logo">
+          <NavLink to="/" prefetch="intent" className="site-logo">
             PORTAL
           </NavLink>
         </div>
@@ -172,13 +195,17 @@ export function ErrorBoundary() {
         <div className="error-page">
           <h1>오류가 발생했습니다</h1>
           <p>예상치 못한 오류가 발생했습니다.</p>
-          <NavLink to="/" className="btn btn-primary">
+          <NavLink to="/" prefetch="intent" className="btn btn-primary">
             홈으로 돌아가기
           </NavLink>
         </div>
       </main>
       <footer className="site-footer">
-        <p>본 서비스는 구성원이 만든 비공식 서비스이며,<br />Apple Developer Academy @ POSTECH와 공식적인 관련이 없습니다.</p>
+        <p>
+          본 서비스는 구성원이 만든 비공식 서비스이며,
+          <br />
+          Apple Developer Academy @ POSTECH와 공식적인 관련이 없습니다.
+        </p>
       </footer>
     </div>
   );
