@@ -1,4 +1,0 @@
-=== Cookie Attributes ===
-setSessionCookie: session={id}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age={seconds}[; Domain={cookieDomain}]
-clearSessionCookie: session=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0[; Domain={cookieDomain}]
-Domain handling: cookieDomain === "" -> Domain omitted (localhost-safe)

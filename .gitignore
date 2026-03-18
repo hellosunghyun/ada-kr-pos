@@ -7,5 +7,8 @@ build
 *.local
 .wrangler
 .dev.vars
+.env
 *.p8
 login-page.png
+.sisyphus/
+qa-screenshot-*.png
