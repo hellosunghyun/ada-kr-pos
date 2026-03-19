@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { createDb } from "~/db/index";
 import { developerApps } from "~/db/schema";
-import { hashApiKey, verifyApiKey } from "~/lib/apikey.server";
+import { hashApiKey } from "~/lib/apikey.server";
 import { log, maskApiKey } from "~/lib/logger.server";
 import type { Env } from "~/types/env";
 
@@ -103,7 +103,7 @@ export async function requireSdkApiKey(
     )
     .get();
 
-  if (!app || !(await verifyApiKey(apiKey, app.apiKeyHash))) {
+  if (!app) {
     log("warn", "API key validation failed", { reason: "Invalid API key" });
     return Response.json({ error: "Invalid API key" }, { status: 403 });
   }
