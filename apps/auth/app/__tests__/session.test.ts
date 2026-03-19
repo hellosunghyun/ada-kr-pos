@@ -1,16 +1,16 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
-  createSession,
-  getSession,
-  deleteSession,
-  registerSessionInUserIndex,
-  deleteAllUserSessions,
-} from "~/lib/session.server";
-import {
-  setSessionCookie,
   clearSessionCookie,
   getSessionIdFromCookie,
+  setSessionCookie,
 } from "~/lib/cookie.server";
+import {
+  createSession,
+  deleteAllUserSessions,
+  deleteSession,
+  getSession,
+  registerSessionInUserIndex,
+} from "~/lib/session.server";
 
 function createMockKV(): KVNamespace {
   const store = new Map<string, string>();
@@ -44,7 +44,11 @@ describe("Session Management", () => {
       const raw = await kv.get(`session:${sessionId}`);
       expect(raw).not.toBeNull();
 
-      const session = JSON.parse(raw!);
+      if (!raw) {
+        throw new Error("Expected session to exist");
+      }
+
+      const session = JSON.parse(raw);
       expect(session.userId).toBe("user-123");
       expect(session.expiresAt).toBeGreaterThan(Date.now());
 
@@ -60,7 +64,7 @@ describe("Session Management", () => {
       const session = await getSession(kv, sessionId);
 
       expect(session).not.toBeNull();
-      expect(session!.userId).toBe("user-456");
+      expect(session?.userId).toBe("user-456");
     });
 
     it("returns null for non-existent session", async () => {
@@ -84,8 +88,8 @@ describe("Session Management", () => {
       const retrieved = await getSession(kv, sessionId);
 
       expect(retrieved).not.toBeNull();
-      expect(retrieved!.expiresAt).toBeGreaterThan(
-        Date.now() + 6 * 24 * 60 * 60 * 1000
+      expect(retrieved?.expiresAt).toBeGreaterThan(
+        Date.now() + 6 * 24 * 60 * 60 * 1000,
       );
     });
   });
@@ -120,48 +124,50 @@ describe("Session Management", () => {
 });
 
 describe("Cookie Management", () => {
-   describe("setSessionCookie", () => {
-     it("sets cookie with Domain=.ada-kr-pos.com in production", () => {
-       const future = Date.now() + 7 * 24 * 60 * 60 * 1000;
-       const cookie = setSessionCookie("sess-123", future, ".ada-kr-pos.com");
+  describe("setSessionCookie", () => {
+    it("sets cookie with Domain=.ada-kr-pos.com in production", () => {
+      const future = Date.now() + 7 * 24 * 60 * 60 * 1000;
+      const cookie = setSessionCookie("sess-123", future, ".ada-kr-pos.com");
 
-       expect(cookie).toContain("adakrpos_session=sess-123");
-       expect(cookie).toContain("Domain=.ada-kr-pos.com");
-       expect(cookie).toContain("HttpOnly");
-       expect(cookie).toContain("Secure");
-       expect(cookie).toContain("SameSite=Lax");
-       expect(cookie).toContain("Path=/");
-       expect(cookie).not.toContain("SameSite=Strict");
-     });
+      expect(cookie).toContain("adakrpos_session=sess-123");
+      expect(cookie).toContain("Domain=.ada-kr-pos.com");
+      expect(cookie).toContain("HttpOnly");
+      expect(cookie).toContain("Secure");
+      expect(cookie).toContain("SameSite=Lax");
+      expect(cookie).toContain("Path=/");
+      expect(cookie).not.toContain("SameSite=Strict");
+    });
 
-     it("sets cookie WITHOUT Domain in local dev (empty COOKIE_DOMAIN)", () => {
-       const future = Date.now() + 7 * 24 * 60 * 60 * 1000;
-       const cookie = setSessionCookie("sess-456", future, "");
+    it("sets cookie WITHOUT Domain in local dev (empty COOKIE_DOMAIN)", () => {
+      const future = Date.now() + 7 * 24 * 60 * 60 * 1000;
+      const cookie = setSessionCookie("sess-456", future, "");
 
-       expect(cookie).toContain("adakrpos_session=sess-456");
-       expect(cookie).not.toContain("Domain=");
-       expect(cookie).toContain("HttpOnly");
-     });
+      expect(cookie).toContain("adakrpos_session=sess-456");
+      expect(cookie).not.toContain("Domain=");
+      expect(cookie).toContain("HttpOnly");
+    });
 
-     it("does NOT include SameSite=Strict", () => {
-       const future = Date.now() + 7 * 24 * 60 * 60 * 1000;
-       const cookie = setSessionCookie("sess-789", future, ".ada-kr-pos.com");
-       expect(cookie).not.toContain("SameSite=Strict");
-     });
-   });
+    it("does NOT include SameSite=Strict", () => {
+      const future = Date.now() + 7 * 24 * 60 * 60 * 1000;
+      const cookie = setSessionCookie("sess-789", future, ".ada-kr-pos.com");
+      expect(cookie).not.toContain("SameSite=Strict");
+    });
+  });
 
-   describe("clearSessionCookie", () => {
-     it("builds Max-Age=0 cookie to clear session", () => {
-       const cookie = clearSessionCookie(".ada-kr-pos.com");
-       expect(cookie).toContain("adakrpos_session=;");
-       expect(cookie).toContain("Max-Age=0");
-       expect(cookie).toContain("Domain=.ada-kr-pos.com");
-     });
-   });
+  describe("clearSessionCookie", () => {
+    it("builds Max-Age=0 cookie to clear session", () => {
+      const cookie = clearSessionCookie(".ada-kr-pos.com");
+      expect(cookie).toContain("adakrpos_session=;");
+      expect(cookie).toContain("Max-Age=0");
+      expect(cookie).toContain("Domain=.ada-kr-pos.com");
+    });
+  });
 
   describe("getSessionIdFromCookie", () => {
     it("extracts session ID from Cookie header", () => {
-      const sessionId = getSessionIdFromCookie("adakrpos_session=abc-123-xyz; other=value");
+      const sessionId = getSessionIdFromCookie(
+        "adakrpos_session=abc-123-xyz; other=value",
+      );
       expect(sessionId).toBe("abc-123-xyz");
     });
 

@@ -86,12 +86,8 @@
           "name": "developer_apps_user_id_users_id_fk",
           "tableFrom": "developer_apps",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

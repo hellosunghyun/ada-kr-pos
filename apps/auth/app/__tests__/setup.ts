@@ -7,7 +7,7 @@ type DB = D1Database; // Will be replaced with drizzle DB type after T2
 export async function createTestSession(
   kv: KVNamespace,
   userId: string,
-  ttlSeconds = 604800 // 7 days
+  ttlSeconds = 604800, // 7 days
 ) {
   const sessionId = crypto.randomUUID();
   const session = {
@@ -25,12 +25,16 @@ export async function createTestSession(
 export async function createTestMagicToken(
   kv: KVNamespace,
   email: string,
-  ttlSeconds = 900 // 15 minutes
+  ttlSeconds = 900, // 15 minutes
 ) {
   const token = crypto.randomUUID();
-  await kv.put(`magic:${token}`, JSON.stringify({ email, createdAt: Date.now() }), {
-    expirationTtl: ttlSeconds,
-  });
+  await kv.put(
+    `magic:${token}`,
+    JSON.stringify({ email, createdAt: Date.now() }),
+    {
+      expirationTtl: ttlSeconds,
+    },
+  );
   return { token };
 }
 
@@ -75,14 +79,18 @@ export function mockResend() {
     extractMagicLink: () => {
       const last = capturedEmails[capturedEmails.length - 1];
       if (!last) return null;
-      const match = last.html.match(/\/api\/auth\/magic\/verify\?token=([a-f0-9-]+)/);
+      const match = last.html.match(
+        /\/api\/auth\/magic\/verify\?token=([a-f0-9-]+)/,
+      );
       if (!match) return null;
       return { token: match[1], url: match[0] };
     },
     extractVerifyLink: () => {
       const last = capturedEmails[capturedEmails.length - 1];
       if (!last) return null;
-      const match = last.html.match(/\/api\/verify\/confirm\?token=([a-f0-9-]+)/);
+      const match = last.html.match(
+        /\/api\/verify\/confirm\?token=([a-f0-9-]+)/,
+      );
       if (!match) return null;
       return { token: match[1], url: match[0] };
     },

@@ -315,8 +315,12 @@ describe("createAdakrposAuth", () => {
       sessionNegativeCacheTtlMs: 0,
     });
 
-    await expect(client.verifySession("session_no_negative")).resolves.toBeNull();
-    await expect(client.verifySession("session_no_negative")).resolves.toBeNull();
+    await expect(
+      client.verifySession("session_no_negative"),
+    ).resolves.toBeNull();
+    await expect(
+      client.verifySession("session_no_negative"),
+    ).resolves.toBeNull();
 
     expect(fetchSpy).toHaveBeenCalledTimes(2);
   });

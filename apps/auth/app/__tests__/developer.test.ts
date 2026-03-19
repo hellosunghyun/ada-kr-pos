@@ -159,7 +159,7 @@ describe("Developer Apps API", () => {
         request,
         context,
         params: {},
-      } as any);
+      } as Parameters<typeof appsLoader>[0]);
       expect(response.status).toBe(403);
 
       const body = (await response.json()) as { error: string };
@@ -189,7 +189,7 @@ describe("Developer Apps API", () => {
         request,
         context,
         params: {},
-      } as any);
+      } as Parameters<typeof appsLoader>[0]);
       expect(response.status).toBe(200);
 
       const body = (await response.json()) as { apps: unknown[] };
@@ -226,7 +226,7 @@ describe("Developer Apps API", () => {
         request,
         context,
         params: {},
-      } as any);
+      } as Parameters<typeof appsAction>[0]);
       expect(response.status).toBe(200);
 
       const body = (await response.json()) as {
@@ -267,7 +267,7 @@ describe("Developer Apps API", () => {
         request,
         context,
         params: {},
-      } as any);
+      } as Parameters<typeof appsAction>[0]);
       expect(response.status).toBe(400);
 
       const body = (await response.json()) as { error: string };
@@ -305,7 +305,7 @@ describe("Developer Apps API", () => {
         request: createRequest,
         context,
         params: {},
-      } as any);
+      } as Parameters<typeof appsAction>[0]);
       const createBody = (await createResponse.json()) as {
         app: { apiKey: string };
       };
@@ -320,7 +320,7 @@ describe("Developer Apps API", () => {
         request: getRequest,
         context,
         params: {},
-      } as any);
+      } as Parameters<typeof appsLoader>[0]);
       const getBody = (await getResponse.json()) as {
         apps: Array<{ apiKeyPrefix: string; apiKey?: string }>;
       };
@@ -363,7 +363,7 @@ describe("Developer Apps API", () => {
         request: createRequest,
         context,
         params: {},
-      } as any);
+      } as Parameters<typeof appsAction>[0]);
       const createBody = (await createResponse.json()) as {
         app: { id: string };
       };
@@ -384,7 +384,7 @@ describe("Developer Apps API", () => {
         request: deleteRequest,
         context,
         params: { id: appId },
-      } as any);
+      } as unknown as Parameters<typeof appsIdAction>[0]);
       expect(deleteResponse.status).toBe(302);
       expect(deleteResponse.headers.get("Location")).toBe("/developer");
 
@@ -397,7 +397,7 @@ describe("Developer Apps API", () => {
         request: getRequest,
         context,
         params: {},
-      } as any);
+      } as Parameters<typeof appsLoader>[0]);
       const getBody = (await getResponse.json()) as { apps: unknown[] };
       expect(getBody.apps).toHaveLength(0);
     });
@@ -446,7 +446,7 @@ describe("Developer Apps API", () => {
         request: createRequest,
         context,
         params: {},
-      } as any);
+      } as Parameters<typeof appsAction>[0]);
       const createBody = (await createResponse.json()) as {
         app: { id: string };
       };
@@ -467,7 +467,7 @@ describe("Developer Apps API", () => {
         request: deleteRequest,
         context,
         params: { id: appId },
-      } as any);
+      } as unknown as Parameters<typeof appsIdAction>[0]);
       expect(deleteResponse.status).toBe(404);
     });
   });
@@ -504,7 +504,7 @@ describe("Developer Apps API", () => {
         request: createRequest,
         context,
         params: {},
-      } as any);
+      } as Parameters<typeof appsAction>[0]);
       const createBody = (await createResponse.json()) as {
         app: { id: string };
       };
@@ -530,7 +530,7 @@ describe("Developer Apps API", () => {
         request: patchRequest,
         context,
         params: { id: appId },
-      } as any);
+      } as unknown as Parameters<typeof appsIdAction>[0]);
       expect(patchResponse.status).toBe(200);
 
       const patchBody = (await patchResponse.json()) as {

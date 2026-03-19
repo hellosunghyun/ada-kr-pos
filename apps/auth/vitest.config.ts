@@ -1,6 +1,6 @@
-import { defineConfig } from "vitest/config";
 import { cloudflarePool } from "@cloudflare/vitest-pool-workers";
 import tsconfigPaths from "vite-tsconfig-paths";
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   plugins: [tsconfigPaths()],
@@ -9,7 +9,12 @@ export default defineConfig({
       wrangler: { configPath: "./wrangler.toml" },
       miniflare: {
         d1Databases: ["DB"],
-        kvNamespaces: ["SESSIONS", "EMAIL_TOKENS", "MAGIC_TOKENS", "RATE_LIMITS"],
+        kvNamespaces: [
+          "SESSIONS",
+          "EMAIL_TOKENS",
+          "MAGIC_TOKENS",
+          "RATE_LIMITS",
+        ],
         r2Buckets: ["PROFILE_PHOTOS"],
         bindings: {
           APPLE_CLIENT_ID: "test-client-id",

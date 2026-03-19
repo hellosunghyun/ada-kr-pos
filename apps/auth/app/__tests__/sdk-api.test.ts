@@ -1,16 +1,20 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import type { AppLoadContext } from "react-router";
 import { env } from "cloudflare:workers";
 import { and, eq } from "drizzle-orm";
+import type { AppLoadContext } from "react-router";
+import { beforeEach, describe, expect, it } from "vitest";
 import { createDb } from "~/db/index";
 import { developerApps } from "~/db/schema";
-import { generateApiKey, getApiKeyPrefix, hashApiKey } from "~/lib/apikey.server";
+import {
+  generateApiKey,
+  getApiKeyPrefix,
+  hashApiKey,
+} from "~/lib/apikey.server";
 import { createUser } from "~/lib/user.server";
-import { createTestSession } from "./setup";
-import type { Env } from "~/types/env";
+import { loader as userLoader } from "~/routes/api.sdk.users.$id";
 import { action as verifyKeyAction } from "~/routes/api.sdk.verify-key";
 import { action as verifySessionAction } from "~/routes/api.sdk.verify-session";
-import { loader as userLoader } from "~/routes/api.sdk.users.$id";
+import type { Env } from "~/types/env";
+import { createTestSession } from "./setup";
 
 const USERS_TABLE_SQL = `
   CREATE TABLE users (
@@ -103,9 +107,15 @@ describe("SDK API routes", () => {
         body: JSON.stringify({}),
       });
 
-      const response = await verifyKeyAction({ request, context, params: {} } as any);
+      const response = await verifyKeyAction({
+        request,
+        context,
+        params: {},
+      } as Parameters<typeof verifyKeyAction>[0]);
       expect(response.status).toBe(401);
-      await expect(response.json()).resolves.toEqual({ error: "Missing API key" });
+      await expect(response.json()).resolves.toEqual({
+        error: "Missing API key",
+      });
     });
 
     it("returns 403 for unknown or inactive API keys", async () => {
@@ -125,9 +135,15 @@ describe("SDK API routes", () => {
         body: JSON.stringify({}),
       });
 
-      const response = await verifyKeyAction({ request, context, params: {} } as any);
+      const response = await verifyKeyAction({
+        request,
+        context,
+        params: {},
+      } as Parameters<typeof verifyKeyAction>[0]);
       expect(response.status).toBe(403);
-      await expect(response.json()).resolves.toEqual({ error: "Invalid API key" });
+      await expect(response.json()).resolves.toEqual({
+        error: "Invalid API key",
+      });
     });
 
     it("returns valid true for an active API key", async () => {
@@ -147,7 +163,11 @@ describe("SDK API routes", () => {
         body: JSON.stringify({}),
       });
 
-      const response = await verifyKeyAction({ request, context, params: {} } as any);
+      const response = await verifyKeyAction({
+        request,
+        context,
+        params: {},
+      } as Parameters<typeof verifyKeyAction>[0]);
       expect(response.status).toBe(200);
       await expect(response.json()).resolves.toEqual({ valid: true });
     });
@@ -172,11 +192,17 @@ describe("SDK API routes", () => {
       let response: Response = new Response(null, { status: 500 });
 
       for (let i = 0; i < 101; i += 1) {
-        response = await verifyKeyAction({ request, context, params: {} } as any);
+        response = await verifyKeyAction({
+          request,
+          context,
+          params: {},
+        } as Parameters<typeof verifyKeyAction>[0]);
       }
 
       expect(response.status).toBe(429);
-      await expect(response.json()).resolves.toEqual({ error: "Rate limit exceeded" });
+      await expect(response.json()).resolves.toEqual({
+        error: "Rate limit exceeded",
+      });
     });
   });
 
@@ -188,23 +214,38 @@ describe("SDK API routes", () => {
         name: "Session SDK User",
       });
       const { apiKey } = await createTestApp(db, "sdk-user-session");
-      const { sessionId, session } = await createTestSession(bindings.SESSIONS, "sdk-user-session");
+      const { sessionId, session } = await createTestSession(
+        bindings.SESSIONS,
+        "sdk-user-session",
+      );
 
-      const request = new Request("https://example.com/api/sdk/verify-session", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
+      const request = new Request(
+        "https://example.com/api/sdk/verify-session",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ sessionId }),
         },
-        body: JSON.stringify({ sessionId }),
-      });
+      );
 
-      const response = await verifySessionAction({ request, context, params: {} } as any);
+      const response = await verifySessionAction({
+        request,
+        context,
+        params: {},
+      } as Parameters<typeof verifySessionAction>[0]);
       expect(response.status).toBe(200);
 
       const body = (await response.json()) as {
         user: { id: string; email: string | null };
-        session: { id: string; userId: string; createdAt: number; expiresAt: number };
+        session: {
+          id: string;
+          userId: string;
+          createdAt: number;
+          expiresAt: number;
+        };
       };
 
       expect(body.user.id).toBe("sdk-user-session");
@@ -225,18 +266,27 @@ describe("SDK API routes", () => {
       });
       const { apiKey } = await createTestApp(db, "sdk-user-missing-session");
 
-      const request = new Request("https://example.com/api/sdk/verify-session", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
+      const request = new Request(
+        "https://example.com/api/sdk/verify-session",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ sessionId: "missing-session-id" }),
         },
-        body: JSON.stringify({ sessionId: "missing-session-id" }),
-      });
+      );
 
-      const response = await verifySessionAction({ request, context, params: {} } as any);
+      const response = await verifySessionAction({
+        request,
+        context,
+        params: {},
+      } as Parameters<typeof verifySessionAction>[0]);
       expect(response.status).toBe(404);
-      await expect(response.json()).resolves.toEqual({ error: "Session not found" });
+      await expect(response.json()).resolves.toEqual({
+        error: "Session not found",
+      });
     });
   });
 
@@ -254,21 +304,28 @@ describe("SDK API routes", () => {
       });
       const { apiKey } = await createTestApp(db, "sdk-user-caller");
 
-      const request = new Request("https://example.com/api/sdk/users/sdk-user-target", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
+      const request = new Request(
+        "https://example.com/api/sdk/users/sdk-user-target",
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
         },
-      });
+      );
 
       const response = await userLoader({
         request,
         context,
         params: { id: "sdk-user-target" },
-      } as any);
+      } as unknown as Parameters<typeof userLoader>[0]);
       expect(response.status).toBe(200);
 
-      const body = (await response.json()) as { id: string; email: string | null; name: string | null };
+      const body = (await response.json()) as {
+        id: string;
+        email: string | null;
+        name: string | null;
+      };
       expect(body.id).toBe("sdk-user-target");
       expect(body.email).toBe("target@example.com");
       expect(body.name).toBe("Target SDK User");
@@ -282,20 +339,25 @@ describe("SDK API routes", () => {
       });
       const { apiKey } = await createTestApp(db, "sdk-user-caller-404");
 
-      const request = new Request("https://example.com/api/sdk/users/missing-user", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
+      const request = new Request(
+        "https://example.com/api/sdk/users/missing-user",
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
         },
-      });
+      );
 
       const response = await userLoader({
         request,
         context,
         params: { id: "missing-user" },
-      } as any);
+      } as unknown as Parameters<typeof userLoader>[0]);
       expect(response.status).toBe(404);
-      await expect(response.json()).resolves.toEqual({ error: "User not found" });
+      await expect(response.json()).resolves.toEqual({
+        error: "User not found",
+      });
     });
 
     it("keeps stored API key hashes opaque", async () => {
@@ -315,15 +377,27 @@ describe("SDK API routes", () => {
         body: JSON.stringify({}),
       });
 
-      const response = await verifyKeyAction({ request, context, params: {} } as any);
+      const response = await verifyKeyAction({
+        request,
+        context,
+        params: {},
+      } as Parameters<typeof verifyKeyAction>[0]);
       const app = await db
         .select({ apiKeyHash: developerApps.apiKeyHash })
         .from(developerApps)
-        .where(and(eq(developerApps.id, appId), eq(developerApps.userId, "sdk-user-opaque")))
+        .where(
+          and(
+            eq(developerApps.id, appId),
+            eq(developerApps.userId, "sdk-user-opaque"),
+          ),
+        )
         .get();
 
       expect(response.status).toBe(200);
-      const body = (await response.json()) as { valid: boolean; apiKeyHash?: string };
+      const body = (await response.json()) as {
+        valid: boolean;
+        apiKeyHash?: string;
+      };
       expect(body).toEqual({ valid: true });
       expect(app?.apiKeyHash).toBeDefined();
       expect(body.apiKeyHash).toBeUndefined();

@@ -1,17 +1,17 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { AppLoadContext } from "react-router";
 import { env } from "cloudflare:workers";
+import type { AppLoadContext } from "react-router";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createDb } from "~/db/index";
 import {
   generateVerificationToken,
   storeVerificationToken,
   validateVerificationToken,
 } from "~/lib/email.server";
-import { getUserById, createUser } from "~/lib/user.server";
-import { action as verifySendAction } from "~/routes/api.verify.send";
+import { createUser, getUserById } from "~/lib/user.server";
 import { loader as verifyConfirmLoader } from "~/routes/api.verify.confirm";
-import { createTestSession, mockResend } from "./setup";
+import { action as verifySendAction } from "~/routes/api.verify.send";
 import type { Env } from "~/types/env";
+import { createTestSession, mockResend } from "./setup";
 
 const USERS_TABLE_SQL = `
   CREATE TABLE users (
@@ -63,7 +63,11 @@ function createMockKV() {
     deleteCalls,
     kv: {
       get: async (key: string) => store.get(key) ?? null,
-      put: async (key: string, value: string, options?: KVNamespacePutOptions) => {
+      put: async (
+        key: string,
+        value: string,
+        options?: KVNamespacePutOptions,
+      ) => {
         putCalls.push({ key, value, options });
         store.set(key, value);
       },
@@ -103,7 +107,11 @@ describe("Email verification", () => {
   it("storeVerificationToken stores the token in KV with a 24 hour TTL", async () => {
     const mock = createMockKV();
 
-    await storeVerificationToken(mock.kv, "member@pos.idserve.net", "token-123");
+    await storeVerificationToken(
+      mock.kv,
+      "member@pos.idserve.net",
+      "token-123",
+    );
 
     expect(mock.store.get("verify:member@pos.idserve.net")).toBe("token-123");
     expect(mock.putCalls).toEqual([
@@ -117,9 +125,17 @@ describe("Email verification", () => {
 
   it("validateVerificationToken returns true for a valid token and deletes it", async () => {
     const mock = createMockKV();
-    await storeVerificationToken(mock.kv, "member@pos.idserve.net", "token-123");
+    await storeVerificationToken(
+      mock.kv,
+      "member@pos.idserve.net",
+      "token-123",
+    );
 
-    const isValid = await validateVerificationToken(mock.kv, "member@pos.idserve.net", "token-123");
+    const isValid = await validateVerificationToken(
+      mock.kv,
+      "member@pos.idserve.net",
+      "token-123",
+    );
 
     expect(isValid).toBe(true);
     expect(mock.store.get("verify:member@pos.idserve.net")).toBeUndefined();
@@ -128,9 +144,17 @@ describe("Email verification", () => {
 
   it("validateVerificationToken returns false for an invalid token", async () => {
     const mock = createMockKV();
-    await storeVerificationToken(mock.kv, "member@pos.idserve.net", "token-123");
+    await storeVerificationToken(
+      mock.kv,
+      "member@pos.idserve.net",
+      "token-123",
+    );
 
-    const isValid = await validateVerificationToken(mock.kv, "member@pos.idserve.net", "wrong-token");
+    const isValid = await validateVerificationToken(
+      mock.kv,
+      "member@pos.idserve.net",
+      "wrong-token",
+    );
 
     expect(isValid).toBe(false);
     expect(mock.store.get("verify:member@pos.idserve.net")).toBe("token-123");
@@ -139,10 +163,22 @@ describe("Email verification", () => {
 
   it("validateVerificationToken rejects token reuse after the first successful validation", async () => {
     const mock = createMockKV();
-    await storeVerificationToken(mock.kv, "member@pos.idserve.net", "token-123");
+    await storeVerificationToken(
+      mock.kv,
+      "member@pos.idserve.net",
+      "token-123",
+    );
 
-    const firstValidation = await validateVerificationToken(mock.kv, "member@pos.idserve.net", "token-123");
-    const secondValidation = await validateVerificationToken(mock.kv, "member@pos.idserve.net", "token-123");
+    const firstValidation = await validateVerificationToken(
+      mock.kv,
+      "member@pos.idserve.net",
+      "token-123",
+    );
+    const secondValidation = await validateVerificationToken(
+      mock.kv,
+      "member@pos.idserve.net",
+      "token-123",
+    );
 
     expect(firstValidation).toBe(true);
     expect(secondValidation).toBe(false);
@@ -154,7 +190,10 @@ describe("Email verification", () => {
       appleEmail: "apple@example.com",
       name: "Email Send Invalid",
     });
-    const { sessionId } = await createTestSession(bindings.SESSIONS, "email-send-invalid");
+    const { sessionId } = await createTestSession(
+      bindings.SESSIONS,
+      "email-send-invalid",
+    );
 
     const request = new Request("https://example.com/api/verify/send", {
       method: "POST",
@@ -166,7 +205,11 @@ describe("Email verification", () => {
       body: JSON.stringify({ email: "member@example.com" }),
     });
 
-    const response = await verifySendAction({ request, context, params: {} } as any);
+    const response = await verifySendAction({
+      request,
+      context,
+      params: {},
+    } as Parameters<typeof verifySendAction>[0]);
     const body = (await response.json()) as { error: string };
 
     expect(response.status).toBe(400);
@@ -180,7 +223,10 @@ describe("Email verification", () => {
       appleEmail: "apple@example.com",
       name: "Email Send Valid",
     });
-    const { sessionId } = await createTestSession(bindings.SESSIONS, "email-send-valid");
+    const { sessionId } = await createTestSession(
+      bindings.SESSIONS,
+      "email-send-valid",
+    );
 
     const request = new Request("https://example.com/api/verify/send", {
       method: "POST",
@@ -192,10 +238,19 @@ describe("Email verification", () => {
       body: JSON.stringify({ email: "member@pos.idserve.net" }),
     });
 
-    const response = await verifySendAction({ request, context, params: {} } as any);
-    const body = (await response.json()) as { success: boolean; message: string };
+    const response = await verifySendAction({
+      request,
+      context,
+      params: {},
+    } as Parameters<typeof verifySendAction>[0]);
+    const body = (await response.json()) as {
+      success: boolean;
+      message: string;
+    };
     const lastEmail = resend.getLastEmail();
-    const storedToken = await bindings.EMAIL_TOKENS.get("verify:member@pos.idserve.net");
+    const storedToken = await bindings.EMAIL_TOKENS.get(
+      "verify:member@pos.idserve.net",
+    );
 
     expect(response.status).toBe(200);
     expect(body).toEqual({
@@ -204,7 +259,7 @@ describe("Email verification", () => {
     });
     expect(lastEmail).not.toBeNull();
     expect(lastEmail?.to).toBe("member@pos.idserve.net");
-     expect(lastEmail?.from).toBe("noreply@ada-kr-pos.com");
+    expect(lastEmail?.from).toBe("noreply@ada-kr-pos.com");
     expect(lastEmail?.subject).toBe("ADA Auth — 이메일 인증");
     expect(lastEmail?.html).toContain("/api/verify/confirm?token=");
     expect(lastEmail?.html).toContain("email=member%40pos.idserve.net");
@@ -218,10 +273,17 @@ describe("Email verification", () => {
       appleEmail: "apple@example.com",
       name: "Email Confirm Valid",
     });
-    const { sessionId } = await createTestSession(bindings.SESSIONS, "email-confirm-valid");
+    const { sessionId } = await createTestSession(
+      bindings.SESSIONS,
+      "email-confirm-valid",
+    );
     const token = generateVerificationToken();
 
-    await storeVerificationToken(bindings.EMAIL_TOKENS, "member@pos.idserve.net", token);
+    await storeVerificationToken(
+      bindings.EMAIL_TOKENS,
+      "member@pos.idserve.net",
+      token,
+    );
 
     const request = new Request(
       `https://example.com/api/verify/confirm?token=${token}&email=${encodeURIComponent("member@pos.idserve.net")}`,
@@ -230,17 +292,23 @@ describe("Email verification", () => {
         headers: {
           Cookie: `adakrpos_session=${sessionId}`,
         },
-      }
+      },
     );
 
-    const response = await verifyConfirmLoader({ request, context, params: {} } as any);
+    const response = await verifyConfirmLoader({
+      request,
+      context,
+      params: {},
+    } as Parameters<typeof verifyConfirmLoader>[0]);
     const verifiedUser = await getUserById(db, "email-confirm-valid");
 
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe("/mypage");
     expect(verifiedUser?.verifiedEmail).toBe("member@pos.idserve.net");
     expect(verifiedUser?.isVerified).toBe(true);
-    expect(await bindings.EMAIL_TOKENS.get("verify:member@pos.idserve.net")).toBeNull();
+    expect(
+      await bindings.EMAIL_TOKENS.get("verify:member@pos.idserve.net"),
+    ).toBeNull();
   });
 
   it("GET /api/verify/confirm returns 400 for an invalid token", async () => {
@@ -248,10 +316,14 @@ describe("Email verification", () => {
       "https://example.com/api/verify/confirm?token=invalid-token&email=member%40pos.idserve.net",
       {
         method: "GET",
-      }
+      },
     );
 
-    const response = await verifyConfirmLoader({ request, context, params: {} } as any);
+    const response = await verifyConfirmLoader({
+      request,
+      context,
+      params: {},
+    } as Parameters<typeof verifyConfirmLoader>[0]);
     const body = (await response.json()) as { error: string };
 
     expect(response.status).toBe(400);

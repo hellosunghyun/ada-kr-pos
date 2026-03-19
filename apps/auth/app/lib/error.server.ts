@@ -11,7 +11,7 @@ export class AppError extends Error {
   constructor(
     message: string,
     public status: number,
-    public code: string
+    public code: string,
   ) {
     super(message);
     this.name = "AppError";
@@ -32,7 +32,7 @@ export class AppError extends Error {
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
   }
 }
@@ -42,7 +42,7 @@ export class AppError extends Error {
  * Thrown when session is invalid, expired, or missing
  */
 export class AuthError extends AppError {
-  constructor(message: string = "Unauthorized") {
+  constructor(message = "Unauthorized") {
     super(message, 401, "AUTH_ERROR");
     this.name = "AuthError";
     Object.setPrototypeOf(this, AuthError.prototype);
@@ -54,7 +54,7 @@ export class AuthError extends AppError {
  * Thrown when request data is invalid
  */
 export class ValidationError extends AppError {
-  constructor(message: string = "Invalid request") {
+  constructor(message = "Invalid request") {
     super(message, 400, "VALIDATION_ERROR");
     this.name = "ValidationError";
     Object.setPrototypeOf(this, ValidationError.prototype);
@@ -66,7 +66,7 @@ export class ValidationError extends AppError {
  * Thrown when rate limit is exceeded
  */
 export class RateLimitError extends AppError {
-  constructor(message: string = "Too many requests") {
+  constructor(message = "Too many requests") {
     super(message, 429, "RATE_LIMIT_ERROR");
     this.name = "RateLimitError";
     Object.setPrototypeOf(this, RateLimitError.prototype);
@@ -78,7 +78,7 @@ export class RateLimitError extends AppError {
  * Thrown when Apple OAuth flow fails
  */
 export class AppleAuthError extends AppError {
-  constructor(message: string = "Apple authentication failed") {
+  constructor(message = "Apple authentication failed") {
     super(message, 401, "APPLE_AUTH_ERROR");
     this.name = "AppleAuthError";
     Object.setPrototypeOf(this, AppleAuthError.prototype);

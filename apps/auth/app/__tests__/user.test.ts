@@ -1,9 +1,7 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import type { AppLoadContext } from "react-router";
 import { env } from "cloudflare:workers";
+import type { AppLoadContext } from "react-router";
+import { beforeEach, describe, expect, it } from "vitest";
 import { createDb } from "~/db/index";
-import { createTestSession } from "./setup";
-import type { Env } from "~/types/env";
 import {
   createUser,
   findOrCreateUser,
@@ -11,7 +9,9 @@ import {
   getUserById,
   updateUserProfile,
 } from "~/lib/user.server";
-import { loader as meLoader, action as meAction } from "~/routes/api.me";
+import { action as meAction, loader as meLoader } from "~/routes/api.me";
+import type { Env } from "~/types/env";
+import { createTestSession } from "./setup";
 
 const USERS_TABLE_SQL = `
   CREATE TABLE users (
@@ -151,7 +151,9 @@ describe("User CRUD", () => {
       name: "Changed Name",
     });
 
-    const rowCount = await bindings.DB.prepare("SELECT COUNT(*) AS count FROM users").first<{ count: number }>();
+    const rowCount = await bindings.DB.prepare(
+      "SELECT COUNT(*) AS count FROM users",
+    ).first<{ count: number }>();
 
     expect(existing.id).toBe("apple-sub-existing");
     expect(existing.name).toBe("Existing User");
@@ -161,9 +163,14 @@ describe("User CRUD", () => {
   it("findOrCreateUser merges into magic link user when verifiedEmail matches appleEmail", async () => {
     const now = new Date();
     await bindings.DB.prepare(
-      "INSERT INTO users (id, verified_email, is_verified, created_at, updated_at, sns_links) VALUES (?, ?, 1, ?, ?, '{}')"
+      "INSERT INTO users (id, verified_email, is_verified, created_at, updated_at, sns_links) VALUES (?, ?, 1, ?, ?, '{}')",
     )
-      .bind("magic_existing", "shared@pos.idserve.net", now.getTime(), now.getTime())
+      .bind(
+        "magic_existing",
+        "shared@pos.idserve.net",
+        now.getTime(),
+        now.getTime(),
+      )
       .run();
 
     const user = await findOrCreateUser(db, {
@@ -171,8 +178,12 @@ describe("User CRUD", () => {
       appleEmail: "shared@pos.idserve.net",
     });
 
-    const rowCount = await bindings.DB.prepare("SELECT COUNT(*) AS count FROM users").first<{ count: number }>();
-    const row = await bindings.DB.prepare("SELECT apple_email FROM users WHERE id = ?")
+    const rowCount = await bindings.DB.prepare(
+      "SELECT COUNT(*) AS count FROM users",
+    ).first<{ count: number }>();
+    const row = await bindings.DB.prepare(
+      "SELECT apple_email FROM users WHERE id = ?",
+    )
       .bind("magic_existing")
       .first<{ apple_email: string | null }>();
 
@@ -202,7 +213,10 @@ describe("User CRUD", () => {
       nickname: "route-get",
       name: "Route Get",
     });
-    const { sessionId } = await createTestSession(bindings.SESSIONS, "apple-sub-route-get");
+    const { sessionId } = await createTestSession(
+      bindings.SESSIONS,
+      "apple-sub-route-get",
+    );
 
     const request = new Request("https://example.com/api/me", {
       method: "GET",
@@ -211,8 +225,14 @@ describe("User CRUD", () => {
       },
     });
 
-    const response = await meLoader({ request, context, params: {} } as any);
-    const body = (await response.json()) as { user: { id: string; email: string | null } };
+    const response = await meLoader({
+      request,
+      context,
+      params: {},
+    } as Parameters<typeof meLoader>[0]);
+    const body = (await response.json()) as {
+      user: { id: string; email: string | null };
+    };
 
     expect(response.status).toBe(200);
     expect(body.user.id).toBe("apple-sub-route-get");
@@ -225,7 +245,9 @@ describe("User CRUD", () => {
     });
 
     try {
-      await meLoader({ request, context, params: {} } as any);
+      await meLoader({ request, context, params: {} } as Parameters<
+        typeof meLoader
+      >[0]);
       expect.fail("Expected loader to throw a 401 response");
     } catch (error) {
       expect(error).toBeInstanceOf(Response);
@@ -243,7 +265,10 @@ describe("User CRUD", () => {
       appleEmail: "route-patch@example.com",
       name: "Route Patch",
     });
-    const { sessionId } = await createTestSession(bindings.SESSIONS, "apple-sub-route-patch");
+    const { sessionId } = await createTestSession(
+      bindings.SESSIONS,
+      "apple-sub-route-patch",
+    );
 
     const request = new Request("https://example.com/api/me", {
       method: "PATCH",
@@ -252,27 +277,36 @@ describe("User CRUD", () => {
         Origin: "https://example.com",
         Cookie: `adakrpos_session=${sessionId}`,
       },
-       body: JSON.stringify({
-         nickname: "patched",
-         bio: "Patched bio",
-         contact: "patched@example.com",
-         snsLinks: {
-           website: "https://ada-kr-pos.com",
-         },
-       }),
-     });
+      body: JSON.stringify({
+        nickname: "patched",
+        bio: "Patched bio",
+        contact: "patched@example.com",
+        snsLinks: {
+          website: "https://ada-kr-pos.com",
+        },
+      }),
+    });
 
-     const response = await meAction({ request, context, params: {} } as any);
-     const body = (await response.json()) as {
-       user: { nickname: string | null; bio: string | null; contact: string | null; snsLinks: Record<string, string> };
-     };
+    const response = await meAction({
+      request,
+      context,
+      params: {},
+    } as Parameters<typeof meAction>[0]);
+    const body = (await response.json()) as {
+      user: {
+        nickname: string | null;
+        bio: string | null;
+        contact: string | null;
+        snsLinks: Record<string, string>;
+      };
+    };
 
-     expect(response.status).toBe(200);
-     expect(body.user.nickname).toBe("patched");
-     expect(body.user.bio).toBe("Patched bio");
-     expect(body.user.contact).toBe("patched@example.com");
-      expect(body.user.snsLinks).toEqual({
-        website: "https://ada-kr-pos.com",
-      });
+    expect(response.status).toBe(200);
+    expect(body.user.nickname).toBe("patched");
+    expect(body.user.bio).toBe("Patched bio");
+    expect(body.user.contact).toBe("patched@example.com");
+    expect(body.user.snsLinks).toEqual({
+      website: "https://ada-kr-pos.com",
+    });
   });
 });
