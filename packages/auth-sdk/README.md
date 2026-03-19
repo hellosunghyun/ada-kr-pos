@@ -100,6 +100,7 @@ Attaches a lazy `auth` function to the Hono context. Call `getAuth(c)` in your h
 |-----------|------|---------|-------------|
 | `apiKey` | `string` | required | Your API key from the developer portal |
 | `authUrl` | `string` | `https://ada-kr-pos.com` | Auth server URL (for self-hosting) |
+| `sessionCacheTtlMs` | `number` | `5000` | Session verification cache TTL in ms (`0` disables) |
 
 ### `getAuth(c)` — Hono helper
 
@@ -194,6 +195,22 @@ API key validation results are cached in-memory for 30 seconds to reduce latency
 - First request: validates with auth server (~50ms)
 - Subsequent requests within 30s: instant (cached)
 - After 30s: re-validates with auth server
+
+Successful session verification responses are also cached in-memory for 5 seconds by default:
+
+- Repeated `verifySession` calls for the same session within 5s return from cache
+- Concurrent `verifySession` calls for the same session share a single in-flight request
+
+Disable session-result caching if you need strict immediate revocation behavior:
+
+```typescript
+import { createAdakrposAuth } from '@adakrpos/auth';
+
+const auth = createAdakrposAuth({
+  apiKey: env.ADAKRPOS_API_KEY,
+  sessionCacheTtlMs: 0,
+});
+```
 
 You can clear the cache manually if needed:
 
