@@ -1,22 +1,27 @@
-import { describe, expect, it, vi, afterEach } from "vitest";
 import {
+  type JWK,
   SignJWT,
   exportJWK,
   exportPKCS8,
   generateKeyPair,
-  type JWK,
 } from "jose";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { Env } from "~/types/env";
 import {
   buildAppleAuthUrl,
   extractUserInfo,
   generateClientSecret,
+  resetAppleJwksCacheForTests,
   verifyIdToken,
 } from "../lib/apple.server";
 
 function decodeJwtPart(part: string): Record<string, unknown> {
   const normalized = part.replace(/-/g, "+").replace(/_/g, "/");
   const missingPadding = normalized.length % 4;
-  const padded = missingPadding === 0 ? normalized : normalized + "=".repeat(4 - missingPadding);
+  const padded =
+    missingPadding === 0
+      ? normalized
+      : normalized + "=".repeat(4 - missingPadding);
   return JSON.parse(atob(padded)) as Record<string, unknown>;
 }
 
@@ -28,18 +33,21 @@ const TEST_ENV = {
 } as const;
 
 afterEach(() => {
+  resetAppleJwksCacheForTests();
   vi.restoreAllMocks();
 });
 
 describe("Apple Sign-In", () => {
   it("generates a valid ES256 client secret JWT", async () => {
-    const { privateKey } = await generateKeyPair("ES256", { extractable: true });
+    const { privateKey } = await generateKeyPair("ES256", {
+      extractable: true,
+    });
     const privateKeyPem = await exportPKCS8(privateKey);
 
     const token = await generateClientSecret({
       ...(TEST_ENV as unknown as Record<string, string>),
       APPLE_PRIVATE_KEY: privateKeyPem,
-    } as any);
+    } as Env);
 
     const parts = token.split(".");
     expect(parts).toHaveLength(3);
@@ -97,7 +105,50 @@ describe("Apple Sign-In", () => {
   });
 
   it("throws on invalid token", async () => {
-    await expect(verifyIdToken("invalid.token.here", "tech.adakrpos.auth.service")).rejects.toThrow();
+    await expect(
+      verifyIdToken("invalid.token.here", "tech.adakrpos.auth.service"),
+    ).rejects.toThrow();
+  });
+
+  it("validates nonce when expectedNonce is provided", async () => {
+    const { privateKey, publicKey } = await generateKeyPair("ES256");
+    const publicJwk = (await exportJWK(publicKey)) as JWK;
+    publicJwk.kid = "apple-test-nonce-kid";
+    publicJwk.alg = "ES256";
+    publicJwk.use = "sig";
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = input instanceof Request ? input.url : input.toString();
+      if (url === "https://appleid.apple.com/auth/keys") {
+        return new Response(JSON.stringify({ keys: [publicJwk] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      throw new Error(`Unexpected fetch URL: ${url}`);
+    });
+
+    const now = Math.floor(Date.now() / 1000);
+    const idToken = await new SignJWT({ nonce: "nonce-expected" })
+      .setProtectedHeader({ alg: "ES256", kid: "apple-test-nonce-kid" })
+      .setIssuer("https://appleid.apple.com")
+      .setSubject("000123.nonce.123")
+      .setAudience("tech.adakrpos.auth.service")
+      .setIssuedAt(now)
+      .setExpirationTime(now + 3600)
+      .sign(privateKey);
+
+    await expect(
+      verifyIdToken(idToken, "tech.adakrpos.auth.service", {
+        expectedNonce: "nonce-expected",
+      }),
+    ).resolves.toMatchObject({ sub: "000123.nonce.123" });
+
+    await expect(
+      verifyIdToken(idToken, "tech.adakrpos.auth.service", {
+        expectedNonce: "nonce-mismatch",
+      }),
+    ).rejects.toThrow("Apple ID token nonce mismatch");
   });
 
   it("extracts sub and email from ID token payload", async () => {
@@ -130,13 +181,13 @@ describe("Apple Sign-In", () => {
     expect(info.email).toBeNull();
   });
 
-   it("builds Apple OAuth URL with form_post mode", () => {
-     const url = buildAppleAuthUrl(
-       "tech.adakrpos.auth.service",
-       "https://ada-kr-pos.com/api/auth/apple/callback",
-       "test-state-123",
-       "test-nonce-456"
-     );
+  it("builds Apple OAuth URL with form_post mode", () => {
+    const url = buildAppleAuthUrl(
+      "tech.adakrpos.auth.service",
+      "https://ada-kr-pos.com/api/auth/apple/callback",
+      "test-state-123",
+      "test-nonce-456",
+    );
 
     expect(url).toContain("https://appleid.apple.com/auth/authorize");
     expect(url).toContain("client_id=tech.adakrpos.auth.service");

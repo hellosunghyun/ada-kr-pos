@@ -1,14 +1,14 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { AppLoadContext } from "react-router";
 import { env } from "cloudflare:workers";
+import type { AppLoadContext } from "react-router";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createDb } from "~/db/index";
 import { users } from "~/db/schema";
-import { getUserById, createUser } from "~/lib/user.server";
 import { sendMagicLink, verifyMagicLink } from "~/lib/magic-link.server";
+import { createUser, getUserById } from "~/lib/user.server";
 import { action as magicSendAction } from "~/routes/api.auth.magic.send";
 import { loader as magicVerifyLoader } from "~/routes/api.auth.magic.verify";
-import { mockResend } from "./setup";
 import type { Env } from "~/types/env";
+import { mockResend } from "./setup";
 
 const USERS_TABLE_SQL = `
   CREATE TABLE users (
@@ -68,12 +68,20 @@ describe("Magic link login", () => {
 
   it("sendMagicLink with non-pos.idserve.net throws", async () => {
     await expect(
-      sendMagicLink(bindings.RESEND_API_KEY, bindings.MAGIC_TOKENS, "member@gmail.com")
+      sendMagicLink(
+        bindings.RESEND_API_KEY,
+        bindings.MAGIC_TOKENS,
+        "member@gmail.com",
+      ),
     ).rejects.toThrow("Invalid email domain. Only @pos.idserve.net allowed.");
   });
 
   it("sendMagicLink with valid email stores token in KV and sends email", async () => {
-    await sendMagicLink(bindings.RESEND_API_KEY, bindings.MAGIC_TOKENS, "member@pos.idserve.net");
+    await sendMagicLink(
+      bindings.RESEND_API_KEY,
+      bindings.MAGIC_TOKENS,
+      "member@pos.idserve.net",
+    );
 
     const sent = resend.getLastEmail();
     const link = resend.extractMagicLink();
@@ -83,7 +91,9 @@ describe("Magic link login", () => {
     expect(link?.token).toMatch(UUID_PATTERN);
 
     const stored = await bindings.MAGIC_TOKENS.get(`magic:${link?.token}`);
-    const payload = stored ? (JSON.parse(stored) as { email: string; createdAt: number }) : null;
+    const payload = stored
+      ? (JSON.parse(stored) as { email: string; createdAt: number })
+      : null;
 
     expect(payload).not.toBeNull();
     expect(payload?.email).toBe("member@pos.idserve.net");
@@ -94,11 +104,19 @@ describe("Magic link login", () => {
     const token = crypto.randomUUID();
     await bindings.MAGIC_TOKENS.put(
       `magic:${token}`,
-      JSON.stringify({ email: "newmagic@pos.idserve.net", createdAt: Date.now() }),
-      { expirationTtl: 900 }
+      JSON.stringify({
+        email: "newmagic@pos.idserve.net",
+        createdAt: Date.now(),
+      }),
+      { expirationTtl: 900 },
     );
 
-    const result = await verifyMagicLink(bindings.MAGIC_TOKENS, db, token, bindings.SESSIONS);
+    const result = await verifyMagicLink(
+      bindings.MAGIC_TOKENS,
+      db,
+      token,
+      bindings.SESSIONS,
+    );
     const user = await getUserById(db, result.userId);
 
     expect(result.userId.startsWith("magic_")).toBe(true);
@@ -110,14 +128,28 @@ describe("Magic link login", () => {
     const token = crypto.randomUUID();
     await bindings.MAGIC_TOKENS.put(
       `magic:${token}`,
-      JSON.stringify({ email: "sessionmagic@pos.idserve.net", createdAt: Date.now() }),
-      { expirationTtl: 900 }
+      JSON.stringify({
+        email: "sessionmagic@pos.idserve.net",
+        createdAt: Date.now(),
+      }),
+      { expirationTtl: 900 },
     );
 
-    const result = await verifyMagicLink(bindings.MAGIC_TOKENS, db, token, bindings.SESSIONS);
-    const sessionRaw = await bindings.SESSIONS.get(`session:${result.sessionId}`);
+    const result = await verifyMagicLink(
+      bindings.MAGIC_TOKENS,
+      db,
+      token,
+      bindings.SESSIONS,
+    );
+    const sessionRaw = await bindings.SESSIONS.get(
+      `session:${result.sessionId}`,
+    );
     const session = sessionRaw
-      ? (JSON.parse(sessionRaw) as { userId: string; createdAt: number; expiresAt: number })
+      ? (JSON.parse(sessionRaw) as {
+          userId: string;
+          createdAt: number;
+          expiresAt: number;
+        })
       : null;
 
     expect(result.sessionId).toMatch(UUID_PATTERN);
@@ -130,19 +162,24 @@ describe("Magic link login", () => {
     await bindings.MAGIC_TOKENS.put(
       `magic:${token}`,
       JSON.stringify({ email: "reuse@pos.idserve.net", createdAt: Date.now() }),
-      { expirationTtl: 900 }
+      { expirationTtl: 900 },
     );
 
     await verifyMagicLink(bindings.MAGIC_TOKENS, db, token, bindings.SESSIONS);
 
     await expect(
-      verifyMagicLink(bindings.MAGIC_TOKENS, db, token, bindings.SESSIONS)
+      verifyMagicLink(bindings.MAGIC_TOKENS, db, token, bindings.SESSIONS),
     ).rejects.toThrow("Invalid or expired magic link token");
   });
 
   it("verifyMagicLink with invalid token throws", async () => {
     await expect(
-      verifyMagicLink(bindings.MAGIC_TOKENS, db, "invalid-token", bindings.SESSIONS)
+      verifyMagicLink(
+        bindings.MAGIC_TOKENS,
+        db,
+        "invalid-token",
+        bindings.SESSIONS,
+      ),
     ).rejects.toThrow("Invalid or expired magic link token");
   });
 
@@ -161,12 +198,22 @@ describe("Magic link login", () => {
     const token = crypto.randomUUID();
     await bindings.MAGIC_TOKENS.put(
       `magic:${token}`,
-      JSON.stringify({ email: "linked@pos.idserve.net", createdAt: Date.now() }),
-      { expirationTtl: 900 }
+      JSON.stringify({
+        email: "linked@pos.idserve.net",
+        createdAt: Date.now(),
+      }),
+      { expirationTtl: 900 },
     );
 
-    const result = await verifyMagicLink(bindings.MAGIC_TOKENS, db, token, bindings.SESSIONS);
-    const count = await bindings.DB.prepare("SELECT COUNT(*) AS count FROM users").first<{ count: number }>();
+    const result = await verifyMagicLink(
+      bindings.MAGIC_TOKENS,
+      db,
+      token,
+      bindings.SESSIONS,
+    );
+    const count = await bindings.DB.prepare(
+      "SELECT COUNT(*) AS count FROM users",
+    ).first<{ count: number }>();
 
     expect(result.userId).toBe("apple-user-link");
     expect(count?.count).toBe(1);
@@ -186,13 +233,23 @@ describe("Magic link login", () => {
     const token = crypto.randomUUID();
     await bindings.MAGIC_TOKENS.put(
       `magic:${token}`,
-      JSON.stringify({ email: "member@pos.idserve.net", createdAt: Date.now() }),
-      { expirationTtl: 900 }
+      JSON.stringify({
+        email: "member@pos.idserve.net",
+        createdAt: Date.now(),
+      }),
+      { expirationTtl: 900 },
     );
 
-    const result = await verifyMagicLink(bindings.MAGIC_TOKENS, db, token, bindings.SESSIONS);
+    const result = await verifyMagicLink(
+      bindings.MAGIC_TOKENS,
+      db,
+      token,
+      bindings.SESSIONS,
+    );
     const user = await getUserById(db, "apple-sub-merge");
-    const count = await bindings.DB.prepare("SELECT COUNT(*) AS count FROM users").first<{ count: number }>();
+    const count = await bindings.DB.prepare(
+      "SELECT COUNT(*) AS count FROM users",
+    ).first<{ count: number }>();
 
     expect(result.userId).toBe("apple-sub-merge");
     expect(user?.verifiedEmail).toBe("member@pos.idserve.net");
@@ -210,11 +267,17 @@ describe("Magic link login", () => {
       body: JSON.stringify({ email: "invalid@gmail.com" }),
     });
 
-    const response = await magicSendAction({ request, context, params: {} } as any);
+    const response = await magicSendAction({
+      request,
+      context,
+      params: {},
+    } as Parameters<typeof magicSendAction>[0]);
     const body = (await response.json()) as { error: string };
 
     expect(response.status).toBe(400);
-    expect(body.error).toBe("Invalid email domain. Only @pos.idserve.net allowed.");
+    expect(body.error).toBe(
+      "Invalid email domain. Only @pos.idserve.net allowed.",
+    );
   });
 
   it("POST /api/auth/magic/send with pos.idserve.net returns 200", async () => {
@@ -227,14 +290,42 @@ describe("Magic link login", () => {
       body: JSON.stringify({ email: "routevalid@pos.idserve.net" }),
     });
 
-    const response = await magicSendAction({ request, context, params: {} } as any);
-    const body = (await response.json()) as { success: boolean; message: string };
+    const response = await magicSendAction({
+      request,
+      context,
+      params: {},
+    } as Parameters<typeof magicSendAction>[0]);
+    const body = (await response.json()) as {
+      success: boolean;
+      message: string;
+    };
 
     expect(response.status).toBe(200);
     expect(body).toEqual({
       success: true,
       message: "매직링크를 발송했습니다",
     });
+  });
+
+  it("POST /api/auth/magic/send with invalid JSON returns 400", async () => {
+    const request = new Request("https://example.com/api/auth/magic/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: "https://example.com",
+      },
+      body: "{not-json",
+    });
+
+    const response = await magicSendAction({
+      request,
+      context,
+      params: {},
+    } as Parameters<typeof magicSendAction>[0]);
+    const body = (await response.json()) as { error: string };
+
+    expect(response.status).toBe(400);
+    expect(body.error).toBe("Invalid JSON body");
   });
 
   it("GET /api/auth/magic/verify with valid token redirects and sets cookie", async () => {
@@ -247,15 +338,25 @@ describe("Magic link login", () => {
     const token = crypto.randomUUID();
     await bindings.MAGIC_TOKENS.put(
       `magic:${token}`,
-      JSON.stringify({ email: "routeverify@pos.idserve.net", createdAt: Date.now() }),
-      { expirationTtl: 900 }
+      JSON.stringify({
+        email: "routeverify@pos.idserve.net",
+        createdAt: Date.now(),
+      }),
+      { expirationTtl: 900 },
     );
 
-    const request = new Request(`https://example.com/api/auth/magic/verify?token=${token}`, {
-      method: "GET",
-    });
+    const request = new Request(
+      `https://example.com/api/auth/magic/verify?token=${token}`,
+      {
+        method: "GET",
+      },
+    );
 
-    const response = await magicVerifyLoader({ request, context, params: {} } as any);
+    const response = await magicVerifyLoader({
+      request,
+      context,
+      params: {},
+    } as Parameters<typeof magicVerifyLoader>[0]);
     const setCookie = response.headers.get("Set-Cookie");
 
     expect(response.status).toBe(302);

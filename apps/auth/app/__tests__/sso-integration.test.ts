@@ -204,4 +204,27 @@ describe("SSO integration", () => {
     expect(response.status).toBe(302);
     expect(stored).toBeNull();
   });
+
+  it("does not throw when logout POST body is missing", async () => {
+    const userId = `logout_missing_body_${crypto.randomUUID()}`;
+    const { sessionId } = await createSession(bindings.SESSIONS, userId);
+
+    const request = new Request("https://example.com/api/auth/logout", {
+      method: "POST",
+      headers: {
+        Cookie: `adakrpos_session=${sessionId}`,
+      },
+    });
+
+    const response = await logoutAction({
+      request,
+      context,
+      params: {},
+    } as Parameters<typeof logoutAction>[0]);
+    const stored = await bindings.SESSIONS.get(`session:${sessionId}`);
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get("Location")).toBe("/login");
+    expect(stored).toBeNull();
+  });
 });
