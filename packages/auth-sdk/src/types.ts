@@ -30,6 +30,7 @@ export interface AdakrposSession {
 export interface AdakrposAuthContext {
   user: AdakrposUser;
   session: AdakrposSession;
+  edgeToken?: string;
   isAuthenticated: true;
 }
 

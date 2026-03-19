@@ -19,16 +19,15 @@ export interface AdakrposAuthConfig {
 }
 
 export interface AdakrposAuthClient {
-  verifySession(
-    sessionId: string,
-  ): Promise<{ user: AdakrposUser; session: AdakrposSession } | null>;
+  verifySession(sessionId: string): Promise<SessionVerificationResult | null>;
   getUser(userId: string): Promise<AdakrposUser | null>;
   getCurrentUser(sessionId: string): Promise<AdakrposUser | null>;
 }
 
-type SessionVerificationResult = {
+export type SessionVerificationResult = {
   user: AdakrposUser;
   session: AdakrposSession;
+  edgeToken?: string;
 };
 
 function createUrl(baseUrl: string, path: string): string {
@@ -60,6 +59,7 @@ function cloneSessionVerificationResult(
       snsLinks: { ...result.user.snsLinks },
     },
     session: { ...result.session },
+    ...(result.edgeToken ? { edgeToken: result.edgeToken } : {}),
   };
 }
 
@@ -182,6 +182,7 @@ export function createAdakrposAuth(
         const cached = getCachedSessionResult<{
           user: AdakrposUser;
           session: AdakrposSession;
+          edgeToken?: string;
         }>(apiKey, sessionId, config.logger);
 
         if (cached) {

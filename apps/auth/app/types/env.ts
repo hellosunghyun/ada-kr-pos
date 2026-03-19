@@ -11,6 +11,8 @@ export interface Env {
   APPLE_PRIVATE_KEY: string;
   RESEND_API_KEY: string;
   AUTH_SECRET: string;
+  EDGE_TOKEN_PRIVATE_KEY?: string;
+  EDGE_TOKEN_KEY_ID?: string;
   COOKIE_DOMAIN: string;
   LOG_LEVEL?: string;
 }

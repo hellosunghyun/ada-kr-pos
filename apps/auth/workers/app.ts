@@ -1,3 +1,7 @@
+import {
+  buildEdgeTokenCookie,
+  consumePendingEdgeToken,
+} from "@adakrpos/auth/generic";
 import { createRequestHandler } from "react-router";
 import { type LogLevel, createLogger } from "~/lib/logger.server";
 import type { Env } from "~/types/env";
@@ -53,6 +57,19 @@ export default {
         cloudflare: { env, ctx },
         logger,
       });
+
+      const pendingEdgeToken = consumePendingEdgeToken(request);
+      if (pendingEdgeToken) {
+        response.headers.append(
+          "Set-Cookie",
+          buildEdgeTokenCookie(pendingEdgeToken, {
+            domain: env.COOKIE_DOMAIN,
+            maxAgeSeconds: 120,
+          }),
+        );
+        logger.info("Edge token cookie issued", { path: pathname });
+      }
+
       status = response.status;
     } catch (error) {
       logger.error("Unhandled request error", {

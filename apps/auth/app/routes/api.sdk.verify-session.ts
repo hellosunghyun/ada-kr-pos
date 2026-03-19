@@ -1,4 +1,5 @@
 import type { ActionFunctionArgs } from "react-router";
+import { createEdgeToken } from "~/lib/edge-token.server";
 import { createLogger, maskSessionId } from "~/lib/logger.server";
 import { requireSdkApiKey } from "~/lib/rate-limit.server";
 import { getSession } from "~/lib/session.server";
@@ -58,13 +59,31 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
     logger.info("Session valid", { userId: user.id });
 
+    const sessionPayload = {
+      id: sessionId,
+      ...session,
+    };
+
+    let edgeToken: string | null = null;
+
+    try {
+      edgeToken = await createEdgeToken({
+        env: auth.env,
+        user,
+        session: sessionPayload,
+      });
+    } catch (error) {
+      logger.warn("Edge token issuance failed", {
+        error,
+        sessionId: maskSessionId(sessionId),
+      });
+    }
+
     return Response.json(
       {
         user,
-        session: {
-          id: sessionId,
-          ...session,
-        },
+        session: sessionPayload,
+        ...(edgeToken ? { edgeToken } : {}),
       },
       { headers: { "Cache-Control": "no-store" } },
     );

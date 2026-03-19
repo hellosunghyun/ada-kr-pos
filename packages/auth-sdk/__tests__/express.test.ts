@@ -1,8 +1,14 @@
+import { SignJWT, exportSPKI, generateKeyPair } from "jose";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { clearApiKeyCache, clearSessionCache } from "../src/cache";
 import { adakrposAuthExpress, requireAuthExpress } from "../src/express";
-import { verifyRequest } from "../src/generic";
+import {
+  buildEdgeTokenCookie,
+  consumePendingEdgeToken,
+  getPendingEdgeToken,
+  verifyRequest,
+} from "../src/generic";
 import type { AuthContext } from "../src/types";
 
 type TestReq = {
@@ -278,5 +284,122 @@ describe("Generic verifyRequest helper", () => {
         body: JSON.stringify({ sessionId: "session_with_special_chars=123" }),
       }),
     );
+  });
+
+  it("resolves auth from edge token without network call", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const { privateKey, publicKey } = await generateKeyPair("ES256");
+    const publicKeyPem = await exportSPKI(publicKey);
+    const now = Math.floor(Date.now() / 1000);
+
+    const edgeToken = await new SignJWT({
+      sid: "session_123",
+      user: validSession.user,
+      session: validSession.session,
+    })
+      .setProtectedHeader({ alg: "ES256", typ: "JWT" })
+      .setIssuer("https://ada-kr-pos.com")
+      .setAudience("adakrpos-edge")
+      .setSubject(validSession.user.id)
+      .setIssuedAt(now)
+      .setExpirationTime(now + 120)
+      .sign(privateKey);
+
+    const request = new Request("http://localhost/", {
+      headers: {
+        Cookie: `adakrpos_session=session_123; adakrpos_edge=${edgeToken}`,
+      },
+    });
+
+    const authContext = await verifyRequest(request, config, {
+      edge: { publicKey: publicKeyPem },
+    });
+
+    expect(authContext).toEqual({
+      ...validSession,
+      isAuthenticated: true,
+      edgeToken,
+    });
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("forces network verify when forceVerify is enabled", async () => {
+    const { privateKey, publicKey } = await generateKeyPair("ES256");
+    const publicKeyPem = await exportSPKI(publicKey);
+    const now = Math.floor(Date.now() / 1000);
+
+    const edgeToken = await new SignJWT({
+      sid: "session_123",
+      user: validSession.user,
+      session: validSession.session,
+    })
+      .setProtectedHeader({ alg: "ES256", typ: "JWT" })
+      .setIssuer("https://ada-kr-pos.com")
+      .setAudience("adakrpos-edge")
+      .setSubject(validSession.user.id)
+      .setIssuedAt(now)
+      .setExpirationTime(now + 120)
+      .sign(privateKey);
+
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({ ...validSession, edgeToken: "fresh-edge" }),
+        {
+          status: 200,
+        },
+      ),
+    );
+    const request = new Request("http://localhost/", {
+      headers: {
+        Cookie: `adakrpos_session=session_123; adakrpos_edge=${edgeToken}`,
+      },
+    });
+
+    const authContext = await verifyRequest(request, config, {
+      edge: { publicKey: publicKeyPem },
+      forceVerify: true,
+    });
+
+    expect(authContext.isAuthenticated).toBe(true);
+    if (!authContext.isAuthenticated) {
+      throw new Error("Expected authenticated context");
+    }
+    expect(authContext.edgeToken).toBe("fresh-edge");
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("stores and consumes pending edge token from network fallback", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          ...validSession,
+          edgeToken: "edge-token-from-server",
+        }),
+        { status: 200 },
+      ),
+    );
+    const request = new Request("http://localhost/", {
+      headers: { Cookie: "adakrpos_session=session_123" },
+    });
+
+    await verifyRequest(request, config, { forceVerify: true });
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(getPendingEdgeToken(request)).toBe("edge-token-from-server");
+    expect(consumePendingEdgeToken(request)).toBe("edge-token-from-server");
+    expect(getPendingEdgeToken(request)).toBeNull();
+  });
+
+  it("builds secure edge token cookie header", () => {
+    const cookie = buildEdgeTokenCookie("token-123", {
+      domain: ".ada-kr-pos.com",
+    });
+
+    expect(cookie).toContain("adakrpos_edge=token-123");
+    expect(cookie).toContain("HttpOnly");
+    expect(cookie).toContain("Secure");
+    expect(cookie).toContain("SameSite=Lax");
+    expect(cookie).toContain("Domain=.ada-kr-pos.com");
+    expect(cookie).toContain("Max-Age=120");
   });
 });

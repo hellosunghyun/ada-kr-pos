@@ -90,6 +90,47 @@ export default {
 };
 ```
 
+With signed edge token cache (3-layer auth cache):
+
+```typescript
+import {
+  buildEdgeTokenCookie,
+  consumePendingEdgeToken,
+  verifyRequest,
+} from '@adakrpos/auth/generic';
+
+export default {
+  async fetch(request: Request, env: Env) {
+    const auth = await verifyRequest(
+      request,
+      { apiKey: env.ADAKRPOS_API_KEY },
+      {
+        edge: {
+          publicKey: env.ADAKRPOS_EDGE_PUBLIC_KEY,
+        },
+      },
+    );
+
+    const response = auth.isAuthenticated
+      ? Response.json({ user: auth.user })
+      : Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const pendingToken = consumePendingEdgeToken(request);
+    if (pendingToken) {
+      response.headers.append(
+        'Set-Cookie',
+        buildEdgeTokenCookie(pendingToken, {
+          domain: '.ada-kr-pos.com',
+          maxAgeSeconds: 120,
+        }),
+      );
+    }
+
+    return response;
+  },
+};
+```
+
 ## API Reference
 
 ### `adakrposAuth(config)` — Hono middleware
@@ -129,6 +170,34 @@ const auth = await verifyRequest(request, { apiKey: env.ADAKRPOS_API_KEY });
 ```
 
 Takes a Web standard `Request` and returns `AuthContext`. No middleware needed.
+
+Supports an optional third argument for edge-token verification and force fallback:
+
+```typescript
+await verifyRequest(request, config, {
+  forceVerify: false,
+  edge: {
+    publicKey: env.ADAKRPOS_EDGE_PUBLIC_KEY,
+    cookieName: 'adakrpos_edge',
+    issuer: 'https://ada-kr-pos.com',
+    audience: 'adakrpos-edge',
+  },
+});
+```
+
+For privileged/admin paths, force origin verification and bypass edge token cache:
+
+```typescript
+const auth = await verifyRequest(request, config, {
+  forceVerify: pathname.startsWith('/admin'),
+  edge: { publicKey: env.ADAKRPOS_EDGE_PUBLIC_KEY },
+});
+```
+
+Helper utilities (generic entrypoint):
+- `getPendingEdgeToken(request)`
+- `consumePendingEdgeToken(request)`
+- `buildEdgeTokenCookie(token, options)`
 
 ### `createAdakrposAuth(config)`
 
@@ -200,6 +269,8 @@ Successful session verification responses are also cached in-memory for 5 second
 
 - Repeated `verifySession` calls for the same session within 5s return from cache
 - Concurrent `verifySession` calls for the same session share a single in-flight request
+
+`verifyRequest` also includes a request-level layer1 cache by default (30s, max 200 entries), and can resolve auth from signed `adakrpos_edge` cookie locally when `edge.publicKey` is configured.
 
 Disable session-result caching if you need strict immediate revocation behavior:
 

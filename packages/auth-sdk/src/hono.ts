@@ -70,6 +70,7 @@ function createAuthFn(
           user: result.user,
           session: result.session,
           isAuthenticated: true,
+          ...(result.edgeToken ? { edgeToken: result.edgeToken } : {}),
         } satisfies AdakrposAuthContext;
       })();
     }
