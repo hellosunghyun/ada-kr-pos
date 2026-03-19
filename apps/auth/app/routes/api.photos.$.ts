@@ -2,6 +2,12 @@ import type { LoaderFunctionArgs } from "react-router";
 import { createLogger } from "~/lib/logger.server";
 import type { Env } from "~/types/env";
 
+type ContextWithCloudflare = {
+  cloudflare: {
+    env: Env;
+  };
+};
+
 export async function loader({ params, context }: LoaderFunctionArgs) {
   const { logger = createLogger() } = context;
   const key = params["*"];
@@ -12,7 +18,7 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
     return new Response("Not Found", { status: 404 });
   }
 
-  const env = (context as any).cloudflare.env as Env;
+  const env = (context as ContextWithCloudflare).cloudflare.env;
   const object = await env.PROFILE_PHOTOS.get(key);
 
   if (!object) {

@@ -1,15 +1,16 @@
+import { isbot } from "isbot";
 import { renderToReadableStream } from "react-dom/server";
 import type { AppLoadContext, EntryContext } from "react-router";
 import { ServerRouter } from "react-router";
-import { isbot } from "isbot";
 
 export default async function handleRequest(
   request: Request,
   responseStatusCode: number,
   responseHeaders: Headers,
   routerContext: EntryContext,
-  loadContext: AppLoadContext
+  loadContext: AppLoadContext,
 ) {
+  let statusCode = responseStatusCode;
   const userAgent = request.headers.get("user-agent");
   const body = await renderToReadableStream(
     <ServerRouter context={routerContext} url={request.url} />,
@@ -17,9 +18,9 @@ export default async function handleRequest(
       signal: request.signal,
       onError(error: unknown) {
         console.error(error);
-        responseStatusCode = 500;
+        statusCode = 500;
       },
-    }
+    },
   );
 
   if (isbot(userAgent ?? "")) {
@@ -29,6 +30,6 @@ export default async function handleRequest(
   responseHeaders.set("Content-Type", "text/html");
   return new Response(body, {
     headers: responseHeaders,
-    status: responseStatusCode,
+    status: statusCode,
   });
 }

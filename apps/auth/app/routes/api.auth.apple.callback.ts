@@ -55,16 +55,29 @@ export async function action({ request, context }: ActionFunctionArgs) {
       );
     }
 
-    await env.SESSIONS.delete(`apple_state:${state}`);
-
-    const { idToken } = await exchangeAuthorizationCode(code, env);
-    const { sub, email } = await verifyIdToken(idToken, env.APPLE_CLIENT_ID);
-    const db = createDb(env.DB);
     const parsed = JSON.parse(storedState) as {
       nonce: string;
       linkUserId?: string;
       callbackUrl?: string;
     };
+
+    await env.SESSIONS.delete(`apple_state:${state}`);
+
+    if (!parsed.nonce || typeof parsed.nonce !== "string") {
+      return new Response(JSON.stringify({ error: "Invalid state payload" }), {
+        status: 400,
+        headers: {
+          "Cache-Control": "no-store",
+          "Content-Type": "application/json",
+        },
+      });
+    }
+
+    const { idToken } = await exchangeAuthorizationCode(code, env);
+    const { sub, email } = await verifyIdToken(idToken, env.APPLE_CLIENT_ID, {
+      expectedNonce: parsed.nonce,
+    });
+    const db = createDb(env.DB);
 
     if (parsed.linkUserId) {
       await linkAppleAccount(db, parsed.linkUserId, sub, email ?? undefined);

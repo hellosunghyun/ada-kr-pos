@@ -32,6 +32,36 @@ async function performLogout(
   });
 }
 
+async function readCallbackUrlFromActionRequest(
+  request: Request,
+): Promise<string | null> {
+  const contentType = request.headers.get("Content-Type")?.toLowerCase() ?? "";
+
+  if (
+    contentType.includes("application/x-www-form-urlencoded") ||
+    contentType.includes("multipart/form-data")
+  ) {
+    try {
+      const formData = await request.formData();
+      const callbackUrl = formData.get("callbackUrl");
+      return typeof callbackUrl === "string" ? callbackUrl : null;
+    } catch {
+      return null;
+    }
+  }
+
+  if (contentType.includes("application/json")) {
+    try {
+      const body = (await request.json()) as { callbackUrl?: unknown };
+      return typeof body.callbackUrl === "string" ? body.callbackUrl : null;
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
 export async function loader({ request, context }: LoaderFunctionArgs) {
   const env = context.cloudflare.env;
   const { logger = createLogger() } = context;
@@ -49,8 +79,11 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 export async function action({ request, context }: ActionFunctionArgs) {
   const env = context.cloudflare.env;
   const { logger = createLogger() } = context;
-  const formData = await request.formData();
-  const callbackUrl = formData.get("callbackUrl") as string | null;
+  const fallbackCallbackUrl = new URL(request.url).searchParams.get(
+    "callbackUrl",
+  );
+  const callbackUrl =
+    (await readCallbackUrlFromActionRequest(request)) ?? fallbackCallbackUrl;
   const sessionId = getSessionIdFromCookie(request.headers.get("Cookie"));
 
   logger.info("User logged out", {

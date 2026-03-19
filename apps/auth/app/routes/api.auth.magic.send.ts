@@ -3,6 +3,26 @@ import { createLogger, maskEmail } from "~/lib/logger.server";
 import { sendMagicLink } from "~/lib/magic-link.server";
 import { validateCsrf } from "~/middleware/csrf.server";
 
+type MagicSendBody = {
+  email?: unknown;
+  callbackUrl?: unknown;
+};
+
+async function parseMagicSendBody(
+  request: Request,
+): Promise<MagicSendBody | null> {
+  const contentType = request.headers.get("Content-Type") ?? "";
+  if (!contentType.toLowerCase().includes("application/json")) {
+    return null;
+  }
+
+  try {
+    return (await request.json()) as MagicSendBody;
+  } catch {
+    return null;
+  }
+}
+
 export async function action({ request, context }: ActionFunctionArgs) {
   if (request.method !== "POST") {
     return new Response("Method Not Allowed", {
@@ -13,10 +33,14 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
   await validateCsrf(request);
 
-  const body = (await request.json()) as {
-    email?: unknown;
-    callbackUrl?: unknown;
-  };
+  const body = await parseMagicSendBody(request);
+  if (!body) {
+    return Response.json(
+      { error: "Invalid JSON body" },
+      { status: 400, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
   const email =
     typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
   const callbackUrl =

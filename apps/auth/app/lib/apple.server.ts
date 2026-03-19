@@ -9,6 +9,11 @@ const APPLE_ISSUER = "https://appleid.apple.com";
 let appleJwks: ReturnType<typeof createRemoteJWKSet> | null = null;
 let appleJwksCreatedAt = 0;
 
+export function resetAppleJwksCacheForTests(): void {
+  appleJwks = null;
+  appleJwksCreatedAt = 0;
+}
+
 function getAppleJwks() {
   const ONE_HOUR = 3600 * 1000;
   if (!appleJwks || Date.now() - appleJwksCreatedAt > ONE_HOUR) {
@@ -86,6 +91,7 @@ export async function exchangeAuthorizationCode(
 export async function verifyIdToken(
   idToken: string,
   clientId: string,
+  options: { expectedNonce?: string } = {},
 ): Promise<{ sub: string; email?: string; emailVerified?: boolean }> {
   const cached = appleJwks !== null;
   const { payload } = await jwtVerify(idToken, getAppleJwks(), {
@@ -97,6 +103,13 @@ export async function verifyIdToken(
   });
 
   const sub = payload.sub as string;
+
+  if (options.expectedNonce !== undefined) {
+    const nonce = payload.nonce;
+    if (typeof nonce !== "string" || nonce !== options.expectedNonce) {
+      throw new Error("Apple ID token nonce mismatch");
+    }
+  }
 
   log("info", "Apple JWT verification", { cached });
   log("info", "Apple ID token verified", { sub });
