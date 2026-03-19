@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Hono } from "hono";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { clearApiKeyCache } from "../src/cache";
+import { clearApiKeyCache, clearSessionCache } from "../src/cache";
 import { adakrposAuth, getAuth, requireAuth } from "../src/hono";
 
 const config = {
@@ -36,10 +36,12 @@ const validSession = {
 describe("Hono middleware", () => {
   beforeEach(() => {
     clearApiKeyCache();
+    clearSessionCache();
   });
 
   afterEach(() => {
     clearApiKeyCache();
+    clearSessionCache();
     vi.restoreAllMocks();
   });
 
@@ -47,7 +49,9 @@ describe("Hono middleware", () => {
     const app = new Hono();
 
     app.use("*", adakrposAuth(config));
-    app.get("/", (c) => c.json({ hasAuth: typeof c.get("auth") === "function" }));
+    app.get("/", (c) =>
+      c.json({ hasAuth: typeof c.get("auth") === "function" }),
+    );
 
     const response = await app.request("http://localhost/");
 
@@ -56,7 +60,7 @@ describe("Hono middleware", () => {
   });
 
   it("returns an unauthenticated context when no session cookie is present", async () => {
-    const fetchSpy = vi.spyOn(global, "fetch");
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
     const app = new Hono();
 
     app.use("*", adakrposAuth(config));
@@ -74,9 +78,11 @@ describe("Hono middleware", () => {
   });
 
   it("returns an authenticated context when the session is valid", async () => {
-    const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
-      new Response(JSON.stringify(validSession), { status: 200 }),
-    );
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify(validSession), { status: 200 }),
+      );
     const app = new Hono();
 
     app.use("*", adakrposAuth(config));
@@ -113,9 +119,11 @@ describe("Hono middleware", () => {
   });
 
   it("allows authenticated requests through requireAuth", async () => {
-    const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
-      new Response(JSON.stringify(validSession), { status: 200 }),
-    );
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify(validSession), { status: 200 }),
+      );
     const app = new Hono();
 
     app.use("*", requireAuth(config));
@@ -134,9 +142,11 @@ describe("Hono middleware", () => {
   });
 
   it("does not call the auth server until getAuth is invoked", async () => {
-    const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
-      new Response(JSON.stringify(validSession), { status: 200 }),
-    );
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify(validSession), { status: 200 }),
+      );
     const app = new Hono();
 
     app.use("*", adakrposAuth(config));
@@ -152,9 +162,11 @@ describe("Hono middleware", () => {
   });
 
   it("calls the auth server when getAuth is invoked", async () => {
-    const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
-      new Response(JSON.stringify(validSession), { status: 200 }),
-    );
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify(validSession), { status: 200 }),
+      );
     const app = new Hono();
 
     app.use("*", adakrposAuth(config));

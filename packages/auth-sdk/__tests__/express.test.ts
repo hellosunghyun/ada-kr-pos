@@ -1,8 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { clearApiKeyCache } from "../src/cache";
+import { clearApiKeyCache, clearSessionCache } from "../src/cache";
 import { adakrposAuthExpress, requireAuthExpress } from "../src/express";
 import { verifyRequest } from "../src/generic";
+import type { AuthContext } from "../src/types";
+
+type TestReq = {
+  headers: { cookie?: string };
+  auth?: () => Promise<AuthContext>;
+};
 
 const config = {
   apiKey: "ak_test",
@@ -36,16 +42,18 @@ const validSession = {
 describe("Express middleware", () => {
   beforeEach(() => {
     clearApiKeyCache();
+    clearSessionCache();
   });
 
   afterEach(() => {
     clearApiKeyCache();
+    clearSessionCache();
     vi.restoreAllMocks();
   });
 
   it("attaches auth function to req", async () => {
     const middleware = adakrposAuthExpress(config);
-    const req = { headers: {} };
+    const req: TestReq = { headers: {} };
     const res = {};
     let nextCalled = false;
 
@@ -58,14 +66,16 @@ describe("Express middleware", () => {
   });
 
   it("returns an unauthenticated context when no session cookie is present", async () => {
-    const fetchSpy = vi.spyOn(global, "fetch");
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
     const middleware = adakrposAuthExpress(config);
-    const req = { headers: {} };
+    const req: TestReq = { headers: {} };
     const res = {};
 
     await middleware(req, res, () => {});
 
-    const authContext = await req.auth();
+    const authFn = req.auth;
+    if (!authFn) throw new Error("auth function was not attached");
+    const authContext = await authFn();
 
     expect(authContext).toEqual({
       user: null,
@@ -76,16 +86,22 @@ describe("Express middleware", () => {
   });
 
   it("returns an authenticated context when the session is valid", async () => {
-    const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
-      new Response(JSON.stringify(validSession), { status: 200 }),
-    );
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify(validSession), { status: 200 }),
+      );
     const middleware = adakrposAuthExpress(config);
-    const req = { headers: { cookie: "adakrpos_session=session_123" } };
+    const req: TestReq = {
+      headers: { cookie: "adakrpos_session=session_123" },
+    };
     const res = {};
 
     await middleware(req, res, () => {});
 
-    const authContext = await req.auth();
+    const authFn = req.auth;
+    if (!authFn) throw new Error("auth function was not attached");
+    const authContext = await authFn();
 
     expect(authContext).toEqual({
       ...validSession,
@@ -102,7 +118,7 @@ describe("Express middleware", () => {
 
   it("returns 401 when auth is required and no session exists", async () => {
     const middleware = requireAuthExpress(config);
-    const req = { headers: {} };
+    const req: TestReq = { headers: {} };
     const res = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn().mockReturnValue({}),
@@ -115,11 +131,15 @@ describe("Express middleware", () => {
   });
 
   it("allows authenticated requests through requireAuthExpress", async () => {
-    const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
-      new Response(JSON.stringify(validSession), { status: 200 }),
-    );
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify(validSession), { status: 200 }),
+      );
     const middleware = requireAuthExpress(config);
-    const req = { headers: { cookie: "adakrpos_session=session_123" } };
+    const req: TestReq = {
+      headers: { cookie: "adakrpos_session=session_123" },
+    };
     const res = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn(),
@@ -136,35 +156,47 @@ describe("Express middleware", () => {
   });
 
   it("does not call the auth server until auth is invoked", async () => {
-    const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
-      new Response(JSON.stringify(validSession), { status: 200 }),
-    );
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify(validSession), { status: 200 }),
+      );
     const middleware = adakrposAuthExpress(config);
-    const req = { headers: { cookie: "adakrpos_session=session_123" } };
+    const req: TestReq = {
+      headers: { cookie: "adakrpos_session=session_123" },
+    };
     const res = {};
 
     await middleware(req, res, () => {});
 
     expect(fetchSpy).not.toHaveBeenCalled();
 
-    await req.auth();
+    const authFn = req.auth;
+    if (!authFn) throw new Error("auth function was not attached");
+    await authFn();
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
   it("caches auth result on subsequent calls", async () => {
-    const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
-      new Response(JSON.stringify(validSession), { status: 200 }),
-    );
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify(validSession), { status: 200 }),
+      );
     const middleware = adakrposAuthExpress(config);
-    const req = { headers: { cookie: "adakrpos_session=session_123" } };
+    const req: TestReq = {
+      headers: { cookie: "adakrpos_session=session_123" },
+    };
     const res = {};
 
     await middleware(req, res, () => {});
 
-    await req.auth();
-    await req.auth();
-    await req.auth();
+    const authFn = req.auth;
+    if (!authFn) throw new Error("auth function was not attached");
+    await authFn();
+    await authFn();
+    await authFn();
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
@@ -173,15 +205,17 @@ describe("Express middleware", () => {
 describe("Generic verifyRequest helper", () => {
   beforeEach(() => {
     clearApiKeyCache();
+    clearSessionCache();
   });
 
   afterEach(() => {
     clearApiKeyCache();
+    clearSessionCache();
     vi.restoreAllMocks();
   });
 
   it("returns an unauthenticated context when no session cookie is present", async () => {
-    const fetchSpy = vi.spyOn(global, "fetch");
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
     const request = new Request("http://localhost/", {
       headers: {},
     });
@@ -197,9 +231,11 @@ describe("Generic verifyRequest helper", () => {
   });
 
   it("returns an authenticated context when the session is valid", async () => {
-    const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
-      new Response(JSON.stringify(validSession), { status: 200 }),
-    );
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify(validSession), { status: 200 }),
+      );
     const request = new Request("http://localhost/", {
       headers: { Cookie: "adakrpos_session=session_123" },
     });
@@ -220,10 +256,14 @@ describe("Generic verifyRequest helper", () => {
   });
 
   it("handles URL-encoded session IDs", async () => {
-    const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
-      new Response(JSON.stringify(validSession), { status: 200 }),
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify(validSession), { status: 200 }),
+      );
+    const encodedSessionId = encodeURIComponent(
+      "session_with_special_chars=123",
     );
-    const encodedSessionId = encodeURIComponent("session_with_special_chars=123");
     const request = new Request("http://localhost/", {
       headers: { Cookie: `adakrpos_session=${encodedSessionId}` },
     });
