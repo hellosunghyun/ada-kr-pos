@@ -45,7 +45,7 @@ export default {
       return freshResponse;
     }
 
-    let response: Response | undefined;
+    let response: Response;
     let status = 500;
 
     try {
@@ -54,6 +54,17 @@ export default {
         logger,
       });
       status = response.status;
+    } catch (error) {
+      logger.error("Unhandled request error", {
+        error,
+        method: request.method,
+        path: pathname,
+      });
+      status = 500;
+      response = Response.json(
+        { error: "Internal server error" },
+        { status: 500 },
+      );
     } finally {
       if (pathname !== "/api/health") {
         logger.info("HTTP request", {
@@ -66,6 +77,6 @@ export default {
       }
     }
 
-    return response || new Response("Internal Server Error", { status: 500 });
+    return response;
   },
 } satisfies ExportedHandler<CloudflareEnvironment>;
