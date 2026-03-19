@@ -142,6 +142,7 @@ Attaches a lazy `auth` function to the Hono context. Call `getAuth(c)` in your h
 | `apiKey` | `string` | required | Your API key from the developer portal |
 | `authUrl` | `string` | `https://ada-kr-pos.com` | Auth server URL (for self-hosting) |
 | `sessionCacheTtlMs` | `number` | `5000` | Session verification cache TTL in ms (`0` disables) |
+| `sessionNegativeCacheTtlMs` | `number` | `2000` | Null/invalid session result cache TTL in ms (`0` disables) |
 
 ### `getAuth(c)` — Hono helper
 
@@ -269,6 +270,12 @@ Successful session verification responses are also cached in-memory for 5 second
 
 - Repeated `verifySession` calls for the same session within 5s return from cache
 - Concurrent `verifySession` calls for the same session share a single in-flight request
+
+Null session verification responses are cached for 2 seconds by default:
+
+- Repeated stale/invalid session checks within 2s return from cache
+- This reduces repeated `/api/sdk/verify-session` calls from expired cookies
+- Set `sessionNegativeCacheTtlMs: 0` to disable null-result caching
 
 `verifyRequest` also includes a request-level layer1 cache by default (30s, max 200 entries), and can resolve auth from signed `adakrpos_edge` cookie locally when `edge.publicKey` is configured.
 
