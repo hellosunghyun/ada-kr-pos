@@ -1,4 +1,10 @@
-import { getCachedApiKeyValidity, setCachedApiKeyValidity } from "./cache";
+import {
+  DEFAULT_SESSION_CACHE_TTL_MS,
+  getCachedApiKeyValidity,
+  getCachedSessionResult,
+  setCachedApiKeyValidity,
+  setCachedSessionResult,
+} from "./cache";
 import type { AdakrposLogFn, AdakrposSession, AdakrposUser } from "./types";
 
 const DEFAULT_AUTH_URL = "https://ada-kr-pos.com";
@@ -9,6 +15,7 @@ export interface AdakrposAuthConfig {
   apiKey: string;
   authUrl?: string;
   logger?: AdakrposLogFn;
+  sessionCacheTtlMs?: number;
 }
 
 export interface AdakrposAuthClient {
@@ -18,6 +25,11 @@ export interface AdakrposAuthClient {
   getUser(userId: string): Promise<AdakrposUser | null>;
   getCurrentUser(sessionId: string): Promise<AdakrposUser | null>;
 }
+
+type SessionVerificationResult = {
+  user: AdakrposUser;
+  session: AdakrposSession;
+};
 
 function createUrl(baseUrl: string, path: string): string {
   return new URL(
@@ -39,11 +51,29 @@ function callLogger(
   logger?.(level, message, meta);
 }
 
+function cloneSessionVerificationResult(
+  result: SessionVerificationResult,
+): SessionVerificationResult {
+  return {
+    user: {
+      ...result.user,
+      snsLinks: { ...result.user.snsLinks },
+    },
+    session: { ...result.session },
+  };
+}
+
 export function createAdakrposAuth(
   config: AdakrposAuthConfig,
 ): AdakrposAuthClient {
   const baseUrl = config.authUrl ?? DEFAULT_AUTH_URL;
   const apiKey = config.apiKey;
+  const sessionCacheTtlMs =
+    config.sessionCacheTtlMs ?? DEFAULT_SESSION_CACHE_TTL_MS;
+  const inFlightSessionRequests = new Map<
+    string,
+    Promise<SessionVerificationResult | null>
+  >();
 
   async function request<T>(
     path: string,
@@ -148,14 +178,53 @@ export function createAdakrposAuth(
 
   return {
     async verifySession(sessionId: string) {
-      return request<{ user: AdakrposUser; session: AdakrposSession }>(
+      if (sessionCacheTtlMs > 0) {
+        const cached = getCachedSessionResult<{
+          user: AdakrposUser;
+          session: AdakrposSession;
+        }>(apiKey, sessionId, config.logger);
+
+        if (cached) {
+          return cloneSessionVerificationResult(cached);
+        }
+      }
+
+      const inFlight = inFlightSessionRequests.get(sessionId);
+      if (inFlight) {
+        return inFlight.then((result) =>
+          result ? cloneSessionVerificationResult(result) : null,
+        );
+      }
+
+      const verifyPromise = request<SessionVerificationResult>(
         "/api/sdk/verify-session",
         {
           method: "POST",
           body: JSON.stringify({ sessionId }),
         },
         { returnNullOnNotFound: true },
-      );
+      ).then((result) => {
+        if (result && sessionCacheTtlMs > 0) {
+          setCachedSessionResult(
+            apiKey,
+            sessionId,
+            result,
+            sessionCacheTtlMs,
+            config.logger,
+          );
+        }
+
+        return result;
+      });
+
+      inFlightSessionRequests.set(sessionId, verifyPromise);
+
+      try {
+        const result = await verifyPromise;
+        return result ? cloneSessionVerificationResult(result) : null;
+      } finally {
+        inFlightSessionRequests.delete(sessionId);
+      }
     },
 
     async getUser(userId: string) {
