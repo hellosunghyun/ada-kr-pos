@@ -10,12 +10,14 @@ import type { AdakrposLogFn, AdakrposSession, AdakrposUser } from "./types";
 const DEFAULT_AUTH_URL = "https://ada-kr-pos.com";
 const RETRY_DELAY_MS = 500;
 const MAX_ATTEMPTS = 2;
+const DEFAULT_SESSION_NEGATIVE_CACHE_TTL_MS = 2_000;
 
 export interface AdakrposAuthConfig {
   apiKey: string;
   authUrl?: string;
   logger?: AdakrposLogFn;
   sessionCacheTtlMs?: number;
+  sessionNegativeCacheTtlMs?: number;
 }
 
 export interface AdakrposAuthClient {
@@ -70,6 +72,8 @@ export function createAdakrposAuth(
   const apiKey = config.apiKey;
   const sessionCacheTtlMs =
     config.sessionCacheTtlMs ?? DEFAULT_SESSION_CACHE_TTL_MS;
+  const sessionNegativeCacheTtlMs =
+    config.sessionNegativeCacheTtlMs ?? DEFAULT_SESSION_NEGATIVE_CACHE_TTL_MS;
   const inFlightSessionRequests = new Map<
     string,
     Promise<SessionVerificationResult | null>
@@ -178,15 +182,19 @@ export function createAdakrposAuth(
 
   return {
     async verifySession(sessionId: string) {
-      if (sessionCacheTtlMs > 0) {
+      if (sessionCacheTtlMs > 0 || sessionNegativeCacheTtlMs > 0) {
         const cached = getCachedSessionResult<{
           user: AdakrposUser;
           session: AdakrposSession;
           edgeToken?: string;
         }>(apiKey, sessionId, config.logger);
 
-        if (cached) {
-          return cloneSessionVerificationResult(cached);
+        if (cached.hit) {
+          if (!cached.value) {
+            return null;
+          }
+
+          return cloneSessionVerificationResult(cached.value);
         }
       }
 
@@ -211,6 +219,18 @@ export function createAdakrposAuth(
             sessionId,
             result,
             sessionCacheTtlMs,
+            config.logger,
+          );
+        } else if (
+          !result &&
+          sessionNegativeCacheTtlMs > 0 &&
+          getCachedApiKeyValidity(apiKey, config.logger) !== false
+        ) {
+          setCachedSessionResult<SessionVerificationResult>(
+            apiKey,
+            sessionId,
+            null,
+            sessionNegativeCacheTtlMs,
             config.logger,
           );
         }

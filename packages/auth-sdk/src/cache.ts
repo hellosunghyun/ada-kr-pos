@@ -10,6 +10,11 @@ interface SessionCacheEntry<T> {
   expiresAt: number;
 }
 
+interface SessionCacheResult<T> {
+  hit: boolean;
+  value: T | null;
+}
+
 function callLogger(
   logger: AdakrposLogFn | undefined,
   level: "info" | "warn" | "error" | "debug",
@@ -99,7 +104,7 @@ export function getCachedSessionResult<T>(
   apiKey: string,
   sessionId: string,
   logger?: AdakrposLogFn,
-): T | null {
+): SessionCacheResult<T> {
   const key = getSessionCacheKey(apiKey, sessionId);
   const entry = sessionCache.get(key);
 
@@ -107,7 +112,7 @@ export function getCachedSessionResult<T>(
     callLogger(logger, "debug", "Session cache miss", {
       sessionId: maskSessionId(sessionId),
     });
-    return null;
+    return { hit: false, value: null };
   }
 
   if (Date.now() > entry.expiresAt) {
@@ -115,20 +120,24 @@ export function getCachedSessionResult<T>(
     callLogger(logger, "debug", "Session cache miss", {
       sessionId: maskSessionId(sessionId),
     });
-    return null;
+    return { hit: false, value: null };
   }
 
   callLogger(logger, "debug", "Session cache hit", {
     sessionId: maskSessionId(sessionId),
   });
 
-  return cloneValue(entry.value as T);
+  if (entry.value === null) {
+    return { hit: true, value: null };
+  }
+
+  return { hit: true, value: cloneValue(entry.value as T) };
 }
 
 export function setCachedSessionResult<T>(
   apiKey: string,
   sessionId: string,
-  value: T,
+  value: T | null,
   ttlMs: number = DEFAULT_SESSION_CACHE_TTL_MS,
   logger?: AdakrposLogFn,
 ): void {

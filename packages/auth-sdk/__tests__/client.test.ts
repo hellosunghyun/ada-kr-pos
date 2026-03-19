@@ -280,6 +280,46 @@ describe("createAdakrposAuth", () => {
 
     vi.useRealTimers();
   });
+
+  it("serves verifySession null responses from short-lived negative session cache", async () => {
+    vi.useFakeTimers();
+
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async () => new Response(null, { status: 404 }));
+
+    const client = createAdakrposAuth({
+      apiKey: "ak_test",
+      sessionNegativeCacheTtlMs: 1000,
+    });
+
+    await expect(client.verifySession("session_missing")).resolves.toBeNull();
+    await expect(client.verifySession("session_missing")).resolves.toBeNull();
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(1001);
+
+    await expect(client.verifySession("session_missing")).resolves.toBeNull();
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+
+    vi.useRealTimers();
+  });
+
+  it("does not cache null responses when negative cache ttl is disabled", async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async () => new Response(null, { status: 404 }));
+
+    const client = createAdakrposAuth({
+      apiKey: "ak_test",
+      sessionNegativeCacheTtlMs: 0,
+    });
+
+    await expect(client.verifySession("session_no_negative")).resolves.toBeNull();
+    await expect(client.verifySession("session_no_negative")).resolves.toBeNull();
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe("API key cache", () => {
