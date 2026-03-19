@@ -2,6 +2,8 @@ import { getCachedApiKeyValidity, setCachedApiKeyValidity } from "./cache";
 import type { AdakrposLogFn, AdakrposSession, AdakrposUser } from "./types";
 
 const DEFAULT_AUTH_URL = "https://ada-kr-pos.com";
+const RETRY_DELAY_MS = 500;
+const MAX_ATTEMPTS = 2;
 
 export interface AdakrposAuthConfig {
   apiKey: string;
@@ -55,61 +57,93 @@ export function createAdakrposAuth(
 
     const url = createUrl(baseUrl, path);
     const method = init.method ?? "GET";
-    const startedAt = Date.now();
 
-    callLogger(config.logger, "info", "SDK API call", { url, method });
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      const startedAt = Date.now();
 
-    let response: Response;
+      callLogger(
+        config.logger,
+        "info",
+        attempt === 1 ? "SDK API call" : "SDK API retry",
+        { url, method, ...(attempt > 1 ? { attempt } : {}) },
+      );
 
-    try {
-      response = await fetch(url, {
-        ...init,
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          ...(init.body ? { "Content-Type": "application/json" } : {}),
-          ...init.headers,
-        },
-      });
-    } catch (error) {
-      callLogger(config.logger, "error", "SDK API request error", {
-        url,
-        method,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      throw error;
-    }
+      let response: Response;
 
-    callLogger(config.logger, "info", "SDK API response", {
-      url,
-      status: response.status,
-      duration: Date.now() - startedAt,
-    });
+      try {
+        response = await fetch(url, {
+          ...init,
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            ...(init.body ? { "Content-Type": "application/json" } : {}),
+            ...init.headers,
+          },
+        });
+      } catch (error) {
+        if (attempt < MAX_ATTEMPTS) {
+          callLogger(config.logger, "warn", "SDK API request error, retrying", {
+            url,
+            method,
+            attempt,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+          continue;
+        }
+        callLogger(config.logger, "error", "SDK API request error", {
+          url,
+          method,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        throw error;
+      }
 
-    if (!response.ok) {
-      callLogger(config.logger, "warn", "SDK API failed", {
+      callLogger(config.logger, "info", "SDK API response", {
         url,
         status: response.status,
+        duration: Date.now() - startedAt,
       });
+
+      if (response.status >= 500 && attempt < MAX_ATTEMPTS) {
+        callLogger(config.logger, "warn", "SDK API server error, retrying", {
+          url,
+          status: response.status,
+          attempt,
+        });
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+        continue;
+      }
+
+      if (!response.ok) {
+        callLogger(config.logger, "warn", "SDK API failed", {
+          url,
+          status: response.status,
+        });
+      }
+
+      if (response.status === 401 || response.status === 403) {
+        setCachedApiKeyValidity(apiKey, false, undefined, config.logger);
+        return null;
+      }
+
+      setCachedApiKeyValidity(apiKey, true, undefined, config.logger);
+
+      if (response.status === 404 && options.returnNullOnNotFound) {
+        return null;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          `Adakrpos auth request failed with status ${response.status}`,
+        );
+      }
+
+      return parseJson<T>(response);
     }
 
-    if (response.status === 401 || response.status === 403) {
-      setCachedApiKeyValidity(apiKey, false, undefined, config.logger);
-      return null;
-    }
-
-    setCachedApiKeyValidity(apiKey, true, undefined, config.logger);
-
-    if (response.status === 404 && options.returnNullOnNotFound) {
-      return null;
-    }
-
-    if (!response.ok) {
-      throw new Error(
-        `Adakrpos auth request failed with status ${response.status}`,
-      );
-    }
-
-    return parseJson<T>(response);
+    throw new Error(
+      `Adakrpos auth request failed after ${MAX_ATTEMPTS} attempts`,
+    );
   }
 
   return {
